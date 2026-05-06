@@ -7,39 +7,70 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # -------------------------
-# Enable testing framework
+# Dependencies
 # -------------------------
+find_package(CURL REQUIRED)
+
 enable_testing()
 
 # -------------------------
-# Core executable
+# Libraries
+# -------------------------
+add_library(crawler
+    src/crawler/http_client.cpp
+)
+
+target_link_libraries(crawler PRIVATE CURL::libcurl)
+
+add_library(threadpool
+    src/common/thread_pool.cpp
+)
+
+# -------------------------
+# Main executable
 # -------------------------
 add_executable(searchdb
     src/main.cpp
-    src/common/thread_pool.cpp
+)
+
+target_link_libraries(searchdb
+    PRIVATE
+        crawler
+        threadpool
+        CURL::libcurl
 )
 
 # -------------------------
-# ThreadPool tests
+# Test helper macro
 # -------------------------
-add_executable(threadpool_basic
-    tests/threadpool_basic.cpp
-    src/common/thread_pool.cpp
-)
+function(add_searchdb_test name type)
+    add_executable(${name}
+        tests/${name}.cpp
+    )
 
-add_executable(threadpool_stress
-    tests/threadpool_stress.cpp
-    src/common/thread_pool.cpp
-)
+    if(type STREQUAL "thread")
+        target_link_libraries(${name}
+            PRIVATE threadpool
+        )
+    elseif(type STREQUAL "crawler")
+        target_link_libraries(${name}
+            PRIVATE crawler CURL::libcurl
+        )
+    else()
+        message(FATAL_ERROR "Unknown test type: ${type}")
+    endif()
 
-add_executable(threadpool_shutdown
-    tests/threadpool_shutdown.cpp
-    src/common/thread_pool.cpp
-)
+    add_test(NAME ${name} COMMAND ${name})
+endfunction()
 
 # -------------------------
-# Register tests with CTest
+# Tests
 # -------------------------
-add_test(NAME basic COMMAND threadpool_basic)
-add_test(NAME stress COMMAND threadpool_stress)
-add_test(NAME shutdown COMMAND threadpool_shutdown)
+# Threadpool tests
+add_searchdb_test(threadpool_basic thread)
+add_searchdb_test(threadpool_stress thread)
+add_searchdb_test(threadpool_shutdown thread)
+
+# Crawler tests
+add_searchdb_test(crawler_http_timeout_test crawler)
+add_searchdb_test(crawler_http_redirect_test crawler)
