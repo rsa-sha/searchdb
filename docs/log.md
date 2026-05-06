@@ -90,3 +90,77 @@ Total Test time (real) =   0.08 sec
 sah@rsa-sha:~/code/exa/searchdb/build$
 ```
 ---
+### Day 3 [6th of May, 2026]
+
+`Readings`
+- Started with the [libcurl documentation](https://curl.se/libcurl/):
+    - Read about [easy interface](https://curl.se/libcurl/c/), related methods:
+        - [curl_easy_init](https://curl.se/libcurl/c/curl_easy_init.html)
+        - [curl_easy_duphandle](https://curl.se/libcurl/c/curl_easy_duphandle.html)
+        - [curl_easy_setopt](https://curl.se/libcurl/c/curl_easy_setopt.html) and the options:
+            - [CURLOPT_URL](https://curl.se/libcurl/c/CURLOPT_URL.html)
+            - [CURLOPT_WRITEFUNCTION](https://curl.se/libcurl/c/CURLOPT_WRITEFUNCTION.html)
+            - [CURLOPT_TIMEOUT](https://curl.se/libcurl/c/CURLOPT_TIMEOUT.html)
+            - [CURLOPT_FOLLOWLOCATION](https://curl.se/libcurl/c/CURLOPT_FOLLOWLOCATION.html)
+            - [CURLOPT_MAXREDIRS](https://curl.se/libcurl/c/CURLOPT_MAXREDIRS.html)
+            - [CURLOPT_USERAGENT](https://curl.se/libcurl/c/CURLOPT_USERAGENT.html)
+        - [curl_easy_perform](https://curl.se/libcurl/c/curl_easy_perform.html)
+- Read about the [write_callback](https://curl.se/libcurl/c/CURLOPT_WRITEFUNCTION.html#EXAMPLE) function
+
+`Implementation Work`
+- Implemented a `fetch()` wrapper over `curl easy interface` methods and `write_callback` for data writes to `HttpResponse`
+- Added basic timeout, redirect and sanity test for the crawler
+- CMakeLists.txt cleanup and test files addition work. Test results:
+```bash
+sah@rsa-sha:~/code/exa/searchdb$  ./script_build.sh
+Generating build files
+-- The C compiler identification is GNU 13.3.0
+-- The CXX compiler identification is GNU 13.3.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/lib/ccache/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/lib/ccache/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Found CURL: /usr/lib/x86_64-linux-gnu/libcurl.so (found version "8.5.0")
+-- Configuring done (0.3s)
+-- Generating done (0.0s)
+-- Build files have been written to: /home/sah/code/exa/searchdb/build
+Building
+ninja: Entering directory `build'
+[16/16] Linking CXX executable crawler_http_redirect_test
+Build successful
+```
+```bash
+sah@rsa-sha:~/code/exa/searchdb$  cd build/
+sah@rsa-sha:~/code/exa/searchdb/build$  ./searchdb
+searchdb v0.0.1
+hello.mmap
+Fetching data from url -> https://en.wikipedia.org/wiki/Web_crawler
+200
+256836
+Fetched data successfully
+sah@rsa-sha:~/code/exa/searchdb/build$  ctest
+Test project /home/sah/code/exa/searchdb/build
+    Start 1: threadpool_basic
+1/5 Test #1: threadpool_basic .................   Passed    0.00 sec
+    Start 2: threadpool_stress
+2/5 Test #2: threadpool_stress ................   Passed    0.01 sec
+    Start 3: threadpool_shutdown
+3/5 Test #3: threadpool_shutdown ..............   Passed    0.06 sec
+    Start 4: crawler_http_timeout_test
+4/5 Test #4: crawler_http_timeout_test ........   Passed   10.01 sec
+    Start 5: crawler_http_redirect_test
+5/5 Test #5: crawler_http_redirect_test .......   Passed    0.68 sec
+
+100% tests passed, 0 tests failed out of 5
+
+Total Test time (real) =  10.77 sec
+sah@rsa-sha:~/code/exa/searchdb/build$ 
+```
+
+---
