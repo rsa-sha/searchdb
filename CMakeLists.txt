@@ -20,6 +20,9 @@ add_library(crawler
     src/crawler/http_client.cpp
 )
 
+add_library(url
+    src/crawler/url_utils.cpp
+)
 target_link_libraries(crawler PRIVATE CURL::libcurl)
 
 add_library(threadpool
@@ -37,6 +40,7 @@ target_link_libraries(searchdb
     PRIVATE
         crawler
         threadpool
+        url
         CURL::libcurl
 )
 
@@ -56,6 +60,10 @@ function(add_searchdb_test name type)
         target_link_libraries(${name}
             PRIVATE crawler CURL::libcurl
         )
+    elseif(type STREQUAL "url")
+        target_link_libraries(${name}
+            PRIVATE url
+        )
     else()
         message(FATAL_ERROR "Unknown test type: ${type}")
     endif()
@@ -74,3 +82,9 @@ add_searchdb_test(threadpool_shutdown thread)
 # Crawler tests
 add_searchdb_test(crawler_http_timeout_test crawler)
 add_searchdb_test(crawler_http_redirect_test crawler)
+
+# URL tests
+add_searchdb_test(url_normalize_test url)
+add_searchdb_test(url_domain_test url)
+add_searchdb_test(url_resolve_test url)
+add_searchdb_test(url_utils_test url)

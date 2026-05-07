@@ -162,5 +162,46 @@ Test project /home/sah/code/exa/searchdb/build
 Total Test time (real) =  10.77 sec
 sah@rsa-sha:~/code/exa/searchdb/build$ 
 ```
+---
+### Day 4 [7th of May, 2026]
 
+`Readings`
+- Read about:
+    - [URI Normalization](https://grokipedia.com/page/URI_normalization):
+    - [RFC 3986](https://datatracker.ietf.org/doc/html/rfc3986#section-4.1)
+    - [URL syntax](https://developer.mozilla.org/en-US/docs/Web/API/URL)
+    - [Why are URL case sensitive?](https://webmasters.stackexchange.com/questions/90339/why-are-urls-case-sensitive)
+    - [Canonical URLs](https://developers.google.com/search/docs/crawling-indexing/consolidate-duplicate-urls)
+`Implementation Work`
+- Implemented `url_component_extraction()` based on the URL syntax guide
+- Implemented `url normalization`, `url resolution` and `url domain extraction` methods
+- CMakeLists.txt updated with new tests for URL related methods. Test results:
+```bash
+
+sah@rsa-sha:~/code/exa/searchdb/build$  ctest
+Test project /home/sah/code/exa/searchdb/build
+    Start 1: threadpool_basic
+1/9 Test #1: threadpool_basic .................   Passed    0.00 sec
+    Start 2: threadpool_stress
+2/9 Test #2: threadpool_stress ................   Passed    0.01 sec
+    Start 3: threadpool_shutdown
+3/9 Test #3: threadpool_shutdown ..............   Passed    0.06 sec
+    Start 4: crawler_http_timeout_test
+4/9 Test #4: crawler_http_timeout_test ........   Passed   10.02 sec
+    Start 5: crawler_http_redirect_test
+5/9 Test #5: crawler_http_redirect_test .......   Passed    0.59 sec
+    Start 6: url_normalize_test
+6/9 Test #6: url_normalize_test ...............   Passed    0.00 sec
+    Start 7: url_domain_test
+7/9 Test #7: url_domain_test ..................   Passed    0.00 sec
+    Start 8: url_resolve_test
+8/9 Test #8: url_resolve_test .................   Passed    0.00 sec
+    Start 9: url_utils_test
+9/9 Test #9: url_utils_test ...................   Passed    0.00 sec
+
+100% tests passed, 0 tests failed out of 9
+
+Total Test time (real) =  10.69 sec
+sah@rsa-sha:~/code/exa/searchdb/build$
+```
 ---
