@@ -205,3 +205,32 @@ Total Test time (real) =  10.69 sec
 sah@rsa-sha:~/code/exa/searchdb/build$
 ```
 ---
+### Day 5 [8th of May, 2026]
+
+`Readings`
+- Read about [URL/Crawl Frontier](https://grokipedia.com/page/crawl_frontier):
+- IR-Book:[The URL Frontier](https://nlp.stanford.edu/IR-book/html/htmledition/the-url-frontier-1.html)
+- IR-Book:[Crawler Architecture](https://nlp.stanford.edu/IR-book/html/htmledition/crawler-architecture-1.html)
+- Paper titled [Design and Implementation of a High-Performance Distributed Web Crawler](https://resources.mpi-inf.mpg.de/d5/teaching/ss05/is05/papers/webcrawler.pdf)
+`Implementation Work`
+- Implemented `URLFrontier` class with basic url(s) additon and fectching[`pop()`] methods and politeness timers
+- CMakeLists.txt updated with new tests for URLFrontier related methods. Test results:
+```bash
+
+sah@rsa-sha:~/code/exa/searchdb/build$  ctest -R "^url_frontier"
+Test project /home/sah/code/exa/searchdb/build
+    Start 10: url_frontier_basic
+1/4 Test #10: url_frontier_basic ...............   Passed    0.00 sec
+    Start 11: url_frontier_done
+2/4 Test #11: url_frontier_done ................   Passed    0.00 sec
+    Start 12: url_frontier_delay
+3/4 Test #12: url_frontier_delay ...............   Passed    0.21 sec
+    Start 13: url_frontier_threaded
+4/4 Test #13: url_frontier_threaded ............   Passed   20.48 sec
+
+100% tests passed, 0 tests failed out of 4
+
+Total Test time (real) =  20.69 sec
+sah@rsa-sha:~/code/exa/searchdb/build$
+```
+---

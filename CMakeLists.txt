@@ -29,6 +29,12 @@ add_library(threadpool
     src/common/thread_pool.cpp
 )
 
+add_library(urlfrontier
+    src/crawler/url_frontier.cpp
+)
+target_link_libraries(urlfrontier
+	PUBLIC url
+)
 # -------------------------
 # Main executable
 # -------------------------
@@ -64,6 +70,10 @@ function(add_searchdb_test name type)
         target_link_libraries(${name}
             PRIVATE url
         )
+    elseif(type STREQUAL "urlfrontier")
+        target_link_libraries(${name}
+			PRIVATE urlfrontier
+        )
     else()
         message(FATAL_ERROR "Unknown test type: ${type}")
     endif()
@@ -88,3 +98,11 @@ add_searchdb_test(url_normalize_test url)
 add_searchdb_test(url_domain_test url)
 add_searchdb_test(url_resolve_test url)
 add_searchdb_test(url_utils_test url)
+
+# URLFrontier tests
+add_searchdb_test(url_frontier_basic urlfrontier)
+add_searchdb_test(url_frontier_done urlfrontier)
+add_searchdb_test(url_frontier_delay urlfrontier)
+add_searchdb_test(url_frontier_threaded urlfrontier)
+target_compile_options(url_frontier_threaded PRIVATE -fsanitize=thread -g)
+target_link_options(url_frontier_threaded PRIVATE -fsanitize=thread)
