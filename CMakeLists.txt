@@ -35,6 +35,16 @@ add_library(urlfrontier
 target_link_libraries(urlfrontier
 	PUBLIC url
 )
+
+add_library(robots
+	src/crawler/robots.cpp
+)
+target_link_libraries(robots
+	PUBLIC
+		url
+		crawler
+		CURL::libcurl
+)
 # -------------------------
 # Main executable
 # -------------------------
@@ -74,6 +84,10 @@ function(add_searchdb_test name type)
         target_link_libraries(${name}
 			PRIVATE urlfrontier
         )
+    elseif(type STREQUAL "robots")
+        target_link_libraries(${name}
+			PRIVATE robots
+        )
     else()
         message(FATAL_ERROR "Unknown test type: ${type}")
     endif()
@@ -104,5 +118,16 @@ add_searchdb_test(url_frontier_basic urlfrontier)
 add_searchdb_test(url_frontier_done urlfrontier)
 add_searchdb_test(url_frontier_delay urlfrontier)
 add_searchdb_test(url_frontier_threaded urlfrontier)
-target_compile_options(url_frontier_threaded PRIVATE -fsanitize=thread -g)
-target_link_options(url_frontier_threaded PRIVATE -fsanitize=thread)
+target_compile_options(url_frontier_threaded PRIVATE
+	-fsanitize=thread
+	-fno-omit-frame-pointer
+    -no-pie
+    -g)
+target_link_options(url_frontier_threaded PRIVATE
+	-fsanitize=thread
+	-no-pie)
+
+# Robots tests
+add_searchdb_test(robots_basic_test robots)
+add_searchdb_test(robots_delay_test robots)
+add_searchdb_test(robots_invalid_test robots)

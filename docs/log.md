@@ -172,6 +172,7 @@ sah@rsa-sha:~/code/exa/searchdb/build$
     - [URL syntax](https://developer.mozilla.org/en-US/docs/Web/API/URL)
     - [Why are URL case sensitive?](https://webmasters.stackexchange.com/questions/90339/why-are-urls-case-sensitive)
     - [Canonical URLs](https://developers.google.com/search/docs/crawling-indexing/consolidate-duplicate-urls)
+
 `Implementation Work`
 - Implemented `url_component_extraction()` based on the URL syntax guide
 - Implemented `url normalization`, `url resolution` and `url domain extraction` methods
@@ -212,6 +213,7 @@ sah@rsa-sha:~/code/exa/searchdb/build$
 - IR-Book:[The URL Frontier](https://nlp.stanford.edu/IR-book/html/htmledition/the-url-frontier-1.html)
 - IR-Book:[Crawler Architecture](https://nlp.stanford.edu/IR-book/html/htmledition/crawler-architecture-1.html)
 - Paper titled [Design and Implementation of a High-Performance Distributed Web Crawler](https://resources.mpi-inf.mpg.de/d5/teaching/ss05/is05/papers/webcrawler.pdf)
+
 `Implementation Work`
 - Implemented `URLFrontier` class with basic url(s) additon and fectching[`pop()`] methods and politeness timers
 - CMakeLists.txt updated with new tests for URLFrontier related methods. Test results:
@@ -231,6 +233,33 @@ Test project /home/sah/code/exa/searchdb/build
 100% tests passed, 0 tests failed out of 4
 
 Total Test time (real) =  20.69 sec
+sah@rsa-sha:~/code/exa/searchdb/build$
+```
+---
+### Day 6 [9th of May, 2026]
+
+`Readings`
+- Re-read/reviewed parts of the code that's written till now
+- Read about [robots.txt](https://grokipedia.com/page/Robots.txt), it's structure, syntax and parameters
+- Went through robots.txt of [github](https://github.com/robots.txt) and [google](https://www.google.com/robots.txt) to get ideas for implementation work
+- Read about [Sitemaps](https://grokipedia.com/page/Site_map) to know what're they for, not implementing for now.
+
+`Implementation Work`
+- Implemented `RobotsChecker` class with basic methods to check crawl allowance, crawl_delay timer, parsing `robots.txt` and in memory cache of the same called `robots_cache_`
+- CMakeLists.txt updated with basic tests for RobotsChecker & related methods. Test results:
+```bash
+sah@rsa-sha:~/code/exa/searchdb/build$  ctest -R "^robots"
+Test project /home/sah/code/exa/searchdb/build
+    Start 14: robots_basic_test
+1/3 Test #14: robots_basic_test ................   Passed    0.42 sec
+    Start 15: robots_delay_test
+2/3 Test #15: robots_delay_test ................   Passed    0.43 sec
+    Start 16: robots_invalid_test
+3/3 Test #16: robots_invalid_test ..............   Passed    0.02 sec
+
+100% tests passed, 0 tests failed out of 3
+
+Total Test time (real) =   0.87 sec
 sah@rsa-sha:~/code/exa/searchdb/build$
 ```
 ---
