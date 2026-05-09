@@ -10,7 +10,10 @@ enum class SearchError {
 	ParseError,			// Unable to format user req or fetched data
 	NotFound,			// Nothing found at the url
 	InvalidArgs,
-	MemError			// To be sent when unable to allocate mem or create variable
+	MemError,			// To be sent when unable to allocate mem or create variable
+	NetworkError,
+	Timeout,
+	HttpError
 };
 
 inline const char* to_string(SearchError err) {
@@ -19,7 +22,10 @@ inline const char* to_string(SearchError err) {
         case SearchError::ParseError: return "ParseError";
         case SearchError::NotFound: return "NotFound";
         case SearchError::InvalidArgs: return "InvalidArgs";
-        case SearchError::MemError: return "MemoeyError";
+        case SearchError::MemError: return "MemoryError";
+        case SearchError::NetworkError: return "NetworkError";
+        case SearchError::Timeout: return "Timeout";
+        case SearchError::HttpError: return "HttpError";
         default: return "UnknownError";
     }
 }

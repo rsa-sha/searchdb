@@ -18,7 +18,7 @@ Result<HttpResponse> fetch(const std::string &url) {
 	HttpResponse resp;
 
 	curl_easy_setopt(curl_obj, CURLOPT_URL, url.c_str());
-	curl_easy_setopt(curl_obj, CURLOPT_FOLLOWLOCATION, 1l);			// Redir to new site on 30X
+	curl_easy_setopt(curl_obj, CURLOPT_FOLLOWLOCATION, 1L);			// Redir to new site on 30X
 	curl_easy_setopt(curl_obj, CURLOPT_MAXREDIRS, 5l);				// Maximum 5 redirections
 	curl_easy_setopt(curl_obj, CURLOPT_TIMEOUT, 10L);				// 10 sec timeout limit
 	curl_easy_setopt(curl_obj, CURLOPT_USERAGENT, "searchdb/v0.1");
@@ -32,7 +32,15 @@ Result<HttpResponse> fetch(const std::string &url) {
 
 	if (ret_code != CURLE_OK) {
 		curl_easy_cleanup(curl_obj);
-		return std::unexpected(SearchError::ParseError);
+		switch (ret_code) {
+			case CURLE_OPERATION_TIMEDOUT:
+				return std::unexpected(SearchError::Timeout);
+			case CURLE_COULDNT_RESOLVE_HOST:
+			case CURLE_COULDNT_CONNECT:
+				return std::unexpected(SearchError::NetworkError);
+			default:
+				return std::unexpected(SearchError::HttpError);
+		}
 	}
 
 	curl_easy_getinfo(curl_obj, CURLINFO_RESPONSE_CODE, &resp.status_code);
