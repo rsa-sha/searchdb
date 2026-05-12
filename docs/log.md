@@ -455,3 +455,15 @@ sah@rsa-sha:~/code/exa/searchdb$  ls -l data/raw/ | grep html | wc -l
 sah@rsa-sha:~/code/exa/searchdb$
 ```
 </details>
+
+
+
+### GDB Run args
+```bash
+gdb --args ./build/searchdb crawl --seeds=tools/crawl_seeds.txt --max-pages=1000 --threads=4 --output=data/raw
+```
+- Fixed the problem in `crawler.cpp` which used regex to extract URLs causing stack overflow in case of larger HTML bodies, replaced with manual string parsing, result of crawling 1000 pages
+```bash
+sah@rsa-sha:~/code/exa/searchdb$ ls -l data/raw | grep html| wc -l
+1000
+```

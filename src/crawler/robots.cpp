@@ -17,16 +17,24 @@ bool RobotsChecker::is_allowed (const std::string &url) {
 	auto domain = extract_domain(normalized_url);
 
 	RobotsRules rules;
+	bool need_to_fetch = false;
 	{
 		std::lock_guard lock(mu_);
 
 		auto it = robots_cache_.find(domain);
 
 		if (it == robots_cache_.end()) {
-			rules = fetch_and_parse_(domain);
-			robots_cache_[domain] = rules;
+			// Fetching outside of lock by setting  need_to_fetch as true
+			// rules = fetch_and_parse_(domain);
+			robots_cache_[domain] = RobotsRules{};
+			need_to_fetch = true;
 		} else
 			rules = it->second;
+	}
+	if (need_to_fetch) {
+		rules = fetch_and_parse_(domain);
+		std::lock_guard lock(mu_);
+		robots_cache_[domain] = rules;
 	}
 	// Now we check for specific path related Allow/Disallow settings
 	const std::string path = extract_path(normalized_url);

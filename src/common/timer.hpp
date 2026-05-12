@@ -1,3 +1,4 @@
+#pragma once
 /* Performance Visibility Tool */
 #include <chrono>
 #include <iostream>

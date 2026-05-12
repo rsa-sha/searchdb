@@ -6,40 +6,48 @@
 #include <sstream>
 
 #include <filesystem>
-#include <regex>
 #include <unordered_set>
 
 std::vector<std::string>
 Crawler::extract_links_(const std::string &html, const std::string &base_url) {
-    std::vector<std::string> links;
+	std::vector<std::string> links;
     std::unordered_set<std::string> seen;
-    // Matches:
-    // href="..."
-    // href='...'
-    static const std::regex href_regex(
-        R"(href\s*=\s*["']([^"']+)["'])",
-        std::regex::icase
-    );
-    auto begin = std::sregex_iterator(
-        html.begin(),
-        html.end(),
-        href_regex
-    );
-    auto end = std::sregex_iterator();
-    for (auto it = begin; it != end; ++it) {
-        std::string raw_link = (*it)[1].str();
-        if (raw_link.empty())
-            continue;
+
+    size_t pos = 0;
+    while (pos < html.size()) {
+        // Find "href" (case-insensitive check for 'h','H')
+        pos = html.find("href", pos);
+        if (pos == std::string::npos) break;
+        pos += 4; // skip "href"
+
+        // Skip optional whitespace and '='
+        while (pos < html.size() && (html[pos] == ' ' || html[pos] == '\t'))
+            pos++;
+        if (pos >= html.size() || html[pos] != '=') continue;
+        pos++; // skip '='
+        while (pos < html.size() && (html[pos] == ' ' || html[pos] == '\t'))
+            pos++;
+
+        if (pos >= html.size()) break;
+        char quote = html[pos];
+        if (quote != '"' && quote != '\'') continue;
+        pos++; // skip opening quote
+
+        size_t end = html.find(quote, pos);
+        if (end == std::string::npos) break;
+
+        std::string raw_link(html, pos, end - pos);
+        pos = end + 1;
+
+        if (raw_link.empty() || raw_link.size() > 2048) continue;
+
         // Resolve relative URL
-        std::string resolved =
-            resolve_url(base_url, raw_link);
-        // Normalize
-		if (!(resolved.starts_with("http://") || resolved.starts_with("https://")))
-			continue;
-        resolved = normalize_url(resolved);
-        if (resolved.empty())
+        std::string resolved = resolve_url(base_url, raw_link);
+        if (!(resolved.starts_with("http://") || resolved.starts_with("https://")))
             continue;
-        // Dedup inside single page
+        resolved = normalize_url(resolved);
+        if (resolved.empty()) continue;
+
         if (!seen.contains(resolved)) {
             seen.insert(resolved);
             links.push_back(resolved);
@@ -98,8 +106,11 @@ void Crawler::crawl_worker_() {
 				continue;
 
 			auto page_num = pages_crawled_.fetch_add(1);
-			if (page_num >= config_.max_pages)
+			if (page_num >= config_.max_pages) {
+				pages_crawled_.fetch_sub(1);
+
 				break;
+			}
 			auto doc_id = next_doc_id_.fetch_add(1);
 			//auto file_name = generate_save_file_path_(url);
 			std::optional<std::string> file_name = config_.output_dir + "/" + std::to_string(doc_id) + ".html";
@@ -115,7 +126,8 @@ void Crawler::crawl_worker_() {
 				continue;
 			}
 			// save html and extract links
-			std::vector<std::string> extracted_urls = extract_links_(resp.body, url);
+			std::string html_copy = resp.body;
+			std::vector<std::string> extracted_urls = extract_links_(html_copy, url);
 			// push discovered links
 			if (!extracted_urls.empty()) {
 				frontier_.push_multiple(extracted_urls);

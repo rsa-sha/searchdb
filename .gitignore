@@ -1,1 +1,11 @@
 .cache/clangd
+
+# stores compiled binaries and library files
+build/
+# crawler data storage location
+data/
+*.o
+*.d
+compile_commands.json
+*.core
+core.*
