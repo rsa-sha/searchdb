@@ -54,7 +54,7 @@ std::chrono::milliseconds RobotsChecker::crawl_delay(const std::string &domain) 
 }
 
 RobotsChecker::RobotsRules RobotsChecker::fetch_and_parse_(const std::string &domain) {
-
+	std::cout << "[robots] fetching robots.txt for " << domain << std::endl;
     RobotsRules rules;
     const std::string robots_url = "https://" + domain + "/robots.txt";
 

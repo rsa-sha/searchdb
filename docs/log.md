@@ -263,3 +263,195 @@ Total Test time (real) =   0.87 sec
 sah@rsa-sha:~/code/exa/searchdb/build$
 ```
 ---
+---
+
+### Day 7 [10th of May, 2026]
+
+#### Readings
+- Reviewed the crawler implementation and investigated issues related to multithreaded crawling and file persistence.
+
+#### Implementation Work
+- Updated the `searchdb` binary to support crawling from a pre-seeded URL list (`tools/crawl_seeds.txt`).
+- Added support for:
+  - configurable crawl limits (`--max-pages`)
+  - configurable worker threads (`--threads`)
+  - configurable output directory (`--output`)
+- Successfully crawled and persisted 50 HTML pages concurrently using 4 crawler threads.
+- Verified:
+  - robots.txt fetching and enforcement
+  - URL frontier expansion from extracted links
+  - HTML persistence into `data/raw`
+  - multithreaded crawl execution
+- Fixed a crawl accounting bug where pages were counted before validating successful HTML persistence, which caused missing output files during concurrent crawling.
+
+- Added basic crawler test, results:
+```bash
+sah@rsa-sha:~/code/exa/searchdb/build$  ctest -R "crawl_test$"
+Test project /home/sah/code/exa/searchdb/build
+    Start 17: crawler_run_basic_crawl_test
+1/1 Test #17: crawler_run_basic_crawl_test .....   Passed    4.40 sec
+
+100% tests passed, 0 tests failed out of 1
+
+Total Test time (real) =   4.40 sec
+sah@rsa-sha:~/code/exa/searchdb/build$
+```
+<details>
+<summary>Crawler run output</summary>
+
+```bash
+sah@rsa-sha:~/code/exa/searchdb$  ./build/searchdb crawl --seeds=tools/crawl_seeds.txt --max-pages=50 --threads=4 --output=data/raw
+[main] loaded 30 seeds
+[crawler] loading 30 seed URLs
+[seed] https://en.wikipedia.org/wiki/Web_crawler
+[seed] https://en.wikipedia.org/wiki/Search_engine
+[seed] https://en.wikipedia.org/wiki/Inverted_index
+[seed] https://en.wikipedia.org/wiki/PageRank
+[seed] https://en.wikipedia.org/wiki/Distributed_system
+[seed] https://en.wikipedia.org/wiki/Database
+[seed] https://en.wikipedia.org/wiki/B-tree
+[seed] https://en.wikipedia.org/wiki/Trie
+[seed] https://en.wikipedia.org/wiki/Latency
+[seed] https://en.wikipedia.org/wiki/HTTP
+[seed] https://en.wikipedia.org/wiki/Kernel_(operating_system)
+[seed] https://en.wikipedia.org/wiki/Linux
+[seed] https://en.wikipedia.org/wiki/Computer_cluster
+[seed] https://en.wikipedia.org/wiki/Load_balancing_(computing)
+[seed] https://en.wikipedia.org/wiki/MapReduce
+[seed] https://en.wikipedia.org/wiki/Concurrency_(computer_science)
+[seed] https://en.wikipedia.org/wiki/Multithreading_(computer_architecture)
+[seed] https://en.wikipedia.org/wiki/Memory_management
+[seed] https://en.wikipedia.org/wiki/Virtual_memory
+[seed] https://en.wikipedia.org/wiki/File_system
+[seed] https://en.wikipedia.org/wiki/RAID
+[seed] https://en.wikipedia.org/wiki/TCP
+[seed] https://en.wikipedia.org/wiki/IP_address
+[seed] https://en.wikipedia.org/wiki/DNS
+[seed] https://en.wikipedia.org/wiki/Compiler
+[seed] https://en.wikipedia.org/wiki/C%2B%2B
+[seed] https://en.wikipedia.org/wiki/Redis
+[seed] https://en.wikipedia.org/wiki/ClickHouse
+[seed] https://en.wikipedia.org/wiki/Elasticsearch
+[seed] https://en.wikipedia.org/wiki/Vector_database
+[robots] fetching robots.txt for en.wikipedia.org
+[1/50]https://en.wikipedia.org/wiki/Inverted_index (79 KB)
+[extract] 142 links from https://en.wikipedia.org/wiki/Inverted_index
+[2/50]https://en.wikipedia.org/wiki/Web_crawler (250 KB)
+[extract] 509 links from https://en.wikipedia.org/wiki/Web_crawler
+[4/50]https://en.wikipedia.org/wiki/Search_engine (313 KB)
+[extract] 658 links from https://en.wikipedia.org/wiki/Search_engine
+[3/50]https://en.wikipedia.org/wiki/PageRank (418 KB)
+[extract] 578 links from https://en.wikipedia.org/wiki/PageRank
+[robots] fetching robots.txt for creativecommons.org
+[5/50]https://en.wikipedia.org/wiki/Distributed_system (308 KB)
+[extract] 722 links from https://en.wikipedia.org/wiki/Distributed_system
+[6/50]https://en.wikipedia.org/wiki/Database (374 KB)
+[extract] 1130 links from https://en.wikipedia.org/wiki/Database
+[7/50]https://en.wikipedia.org/wiki/B-tree (263 KB)
+[extract] 435 links from https://en.wikipedia.org/wiki/B-tree
+[robots] fetching robots.txt for meta.wikimedia.org
+[8/50]https://creativecommons.org/licenses/by-sa/4.0/deed.en (34 KB)
+[extract] 111 links from https://creativecommons.org/licenses/by-sa/4.0/deed.en
+[9/50]https://en.wikipedia.org/wiki/Trie (219 KB)
+[extract] 496 links from https://en.wikipedia.org/wiki/Trie
+[10/50]https://en.wikipedia.org/wiki/Latency (55 KB)
+[extract] 93 links from https://en.wikipedia.org/wiki/Latency
+[robots] fetching robots.txt for donate.wikimedia.org
+[11/50]https://en.wikipedia.org/wiki/HTTP (408 KB)
+[extract] 993 links from https://en.wikipedia.org/wiki/HTTP
+[12/50]https://en.wikipedia.org/wiki/Kernel_(operating_system) (325 KB)
+[extract] 655 links from https://en.wikipedia.org/wiki/Kernel_(operating_system)
+[robots] fetching robots.txt for ar.wikipedia.org
+[13/50]https://meta.wikimedia.org/ (141 KB)
+[extract] 385 links from https://meta.wikimedia.org/
+[14/50]https://donate.wikimedia.org/?wmf_source=donate&amp;wmf_medium=sidebar&amp;wmf_campaign=en.wikipedia.org&amp;uselang=en (56 KB)
+[extract] 32 links from https://donate.wikimedia.org/?wmf_source=donate&amp;wmf_medium=sidebar&amp;wmf_campaign=en.wikipedia.org&amp;uselang=en
+[16/50]https://ar.wikipedia.org/wiki/%D9%81%D9%87%D8%B1%D8%B3_%D9%85%D9%82%D9%84%D9%88%D8%A8 (100 KB)
+[extract] 137 links from https://ar.wikipedia.org/wiki/%D9%81%D9%87%D8%B1%D8%B3_%D9%85%D9%82%D9%84%D9%88%D8%A8
+[15/50]https://en.wikipedia.org/wiki/Linux (626 KB)
+[extract] 1771 links from https://en.wikipedia.org/wiki/Linux
+[17/50]https://en.wikipedia.org/wiki/Computer_cluster (203 KB)
+[extract] 465 links from https://en.wikipedia.org/wiki/Computer_cluster
+[robots] fetching robots.txt for az.wikipedia.org
+[18/50]https://en.wikipedia.org/wiki/Load_balancing_(computing) (203 KB)
+[extract] 352 links from https://en.wikipedia.org/wiki/Load_balancing_(computing)
+[19/50]https://en.wikipedia.org/wiki/Concurrency_(computer_science) (130 KB)
+[extract] 264 links from https://en.wikipedia.org/wiki/Concurrency_(computer_science)
+[robots] fetching robots.txt for ca.wikipedia.org
+[20/50]https://en.wikipedia.org/wiki/MapReduce (307 KB)
+[extract] 1258 links from https://en.wikipedia.org/wiki/MapReduce
+[21/50]https://az.wikipedia.org/wiki/T%C9%99rsin%C9%99_%C3%A7evrilmi%C5%9F_fayl (63 KB)
+[extract] 93 links from https://az.wikipedia.org/wiki/T%C9%99rsin%C9%99_%C3%A7evrilmi%C5%9F_fayl
+[22/50]https://en.wikipedia.org/wiki/Multithreading_(computer_architecture) (180 KB)
+[extract] 696 links from https://en.wikipedia.org/wiki/Multithreading_(computer_architecture)
+[23/50]https://ca.wikipedia.org/wiki/%C3%8Dndex_invertit (86 KB)
+[extract] 120 links from https://ca.wikipedia.org/wiki/%C3%8Dndex_invertit
+[24/50]https://en.wikipedia.org/wiki/Memory_management (173 KB)
+[extract] 332 links from https://en.wikipedia.org/wiki/Memory_management
+[25/50]https://en.wikipedia.org/wiki/Virtual_memory (216 KB)
+[extract] 435 links from https://en.wikipedia.org/wiki/Virtual_memory
+[robots] fetching robots.txt for cs.wikipedia.org
+[27/50]https://en.wikipedia.org/wiki/TCP (64 KB)
+[extract] 117 links from https://en.wikipedia.org/wiki/TCP
+[26/50]https://en.wikipedia.org/wiki/File_system (380 KB)
+[extract] 940 links from https://en.wikipedia.org/wiki/File_system
+[robots] fetching robots.txt for de.wikipedia.org
+[28/50]https://en.wikipedia.org/wiki/RAID (283 KB)
+[extract] 506 links from https://en.wikipedia.org/wiki/RAID
+[29/50]https://cs.wikipedia.org/wiki/Invertovan%C3%BD_soubor (59 KB)
+[extract] 91 links from https://cs.wikipedia.org/wiki/Invertovan%C3%BD_soubor
+[30/50]https://en.wikipedia.org/wiki/IP_address (231 KB)
+[extract] 470 links from https://en.wikipedia.org/wiki/IP_address
+[31/50]https://de.wikipedia.org/wiki/Invertierte_Datei (57 KB)
+[extract] 86 links from https://de.wikipedia.org/wiki/Invertierte_Datei
+[32/50]https://en.wikipedia.org/wiki/DNS (339 KB)
+[extract] 671 links from https://en.wikipedia.org/wiki/DNS
+[33/50]https://en.wikipedia.org/wiki/Compiler (312 KB)
+[extract] 808 links from https://en.wikipedia.org/wiki/Compiler
+[robots] fetching robots.txt for es.wikipedia.org
+[34/50]https://en.wikipedia.org/wiki/Redis (187 KB)
+[extract] 299 links from https://en.wikipedia.org/wiki/Redis
+[35/50]https://en.wikipedia.org/wiki/C%2B%2B (410 KB)
+[extract] 1400 links from https://en.wikipedia.org/wiki/C%2B%2B
+[36/50]https://en.wikipedia.org/wiki/ClickHouse (104 KB)
+[extract] 159 links from https://en.wikipedia.org/wiki/ClickHouse
+[robots] fetching robots.txt for fi.wikipedia.org
+[37/50]https://es.wikipedia.org/wiki/%C3%8Dndice_invertido (71 KB)
+[extract] 101 links from https://es.wikipedia.org/wiki/%C3%8Dndice_invertido
+[robots] fetching robots.txt for fr.wikipedia.org
+[38/50]https://en.wikipedia.org/wiki/Elasticsearch (129 KB)
+[extract] 207 links from https://en.wikipedia.org/wiki/Elasticsearch
+[39/50]https://en.wikipedia.org/wiki/Vector_database (199 KB)
+[extract] 385 links from https://en.wikipedia.org/wiki/Vector_database
+[40/50]https://fi.wikipedia.org/wiki/K%C3%A4%C3%A4nteistiedosto (85 KB)
+[extract] 97 links from https://fi.wikipedia.org/wiki/K%C3%A4%C3%A4nteistiedosto
+[robots] fetching robots.txt for ja.wikipedia.org
+[41/50]https://fr.wikipedia.org/wiki/Index_invers%C3%A9 (64 KB)
+[extract] 99 links from https://fr.wikipedia.org/wiki/Index_invers%C3%A9
+[robots] fetching robots.txt for ko.wikipedia.org
+[robots] fetching robots.txt for no.wikipedia.org
+[42/50]https://ja.wikipedia.org/wiki/%E8%BB%A2%E7%BD%AE%E3%82%A4%E3%83%B3%E3%83%87%E3%83%83%E3%82%AF%E3%82%B9 (87 KB)
+[extract] 115 links from https://ja.wikipedia.org/wiki/%E8%BB%A2%E7%BD%AE%E3%82%A4%E3%83%B3%E3%83%87%E3%83%83%E3%82%AF%E3%82%B9
+[43/50]https://ko.wikipedia.org/wiki/%EC%97%AD%EC%83%89%EC%9D%B8 (88 KB)
+[extract] 127 links from https://ko.wikipedia.org/wiki/%EC%97%AD%EC%83%89%EC%9D%B8
+[44/50]https://no.wikipedia.org/wiki/Invertert_indeks (70 KB)
+[extract] 99 links from https://no.wikipedia.org/wiki/Invertert_indeks
+[robots] fetching robots.txt for pt.wikipedia.org
+[45/50]https://en.wikipedia.org/wiki/Main_Page (223 KB)
+[extract] 641 links from https://en.wikipedia.org/wiki/Main_Page
+[46/50]https://en.wikipedia.org/wiki (223 KB)
+[extract] 641 links from https://en.wikipedia.org/wiki
+[robots] fetching robots.txt for ru.wikipedia.org
+[47/50]https://en.wikipedia.org/wiki/Wikipedia:Contents (138 KB)
+[extract] 208 links from https://en.wikipedia.org/wiki/Wikipedia:Contents
+[48/50]https://pt.wikipedia.org/wiki/Listas_invertidas (61 KB)
+[extract] 94 links from https://pt.wikipedia.org/wiki/Listas_invertidas
+[49/50]https://en.wikipedia.org/wiki/Portal:Current_events (339 KB)
+[extract] 1679 links from https://en.wikipedia.org/wiki/Portal:Current_events
+[50/50]https://ru.wikipedia.org/wiki/%D0%98%D0%BD%D0%B2%D0%B5%D1%80%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%BD%D1%8B%D0%B9_%D0%B8%D0%BD%D0%B4%D0%B5%D0%BA%D1%81 (103 KB)
+[extract] 112 links from https://ru.wikipedia.org/wiki/%D0%98%D0%BD%D0%B2%D0%B5%D1%80%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%BD%D1%8B%D0%B9_%D0%B8%D0%BD%D0%B4%D0%B5%D0%BA%D1%81
+sah@rsa-sha:~/code/exa/searchdb$  ls -l data/raw/ | grep html | wc -l
+50
+sah@rsa-sha:~/code/exa/searchdb$
+```
+</details>

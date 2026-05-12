@@ -45,6 +45,19 @@ target_link_libraries(robots
 		crawler
 		CURL::libcurl
 )
+
+add_library(crawl_core
+	src/crawler/crawler.cpp
+)
+target_link_libraries(crawl_core
+	PUBLIC
+		url
+		crawler
+		CURL::libcurl
+		threadpool
+		urlfrontier
+		robots
+)
 # -------------------------
 # Main executable
 # -------------------------
@@ -55,6 +68,7 @@ add_executable(searchdb
 target_link_libraries(searchdb
     PRIVATE
         crawler
+		crawl_core
         threadpool
         url
         CURL::libcurl
@@ -87,6 +101,10 @@ function(add_searchdb_test name type)
     elseif(type STREQUAL "robots")
         target_link_libraries(${name}
 			PRIVATE robots
+        )
+    elseif(type STREQUAL "crawl_core")
+        target_link_libraries(${name}
+			PRIVATE crawl_core
         )
     else()
         message(FATAL_ERROR "Unknown test type: ${type}")
@@ -131,3 +149,6 @@ target_link_options(url_frontier_threaded PRIVATE
 add_searchdb_test(robots_basic_test robots)
 add_searchdb_test(robots_delay_test robots)
 add_searchdb_test(robots_invalid_test robots)
+
+# Crawl core
+add_searchdb_test(crawler_run_basic_crawl_test crawl_core)

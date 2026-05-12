@@ -1,41 +1,66 @@
-#include<iostream>
+#include "crawler/crawler.hpp"
+
 #include <fstream>
+#include <iostream>
+#include <string>
+#include <vector>
 
+static std::vector<std::string>
+read_seed_file(const std::string& path) {
+    std::vector<std::string> seeds;
+    std::ifstream in(path);
+    if (!in.is_open()) {
+        throw std::runtime_error(
+            "failed to open seeds file: " + path
+        );
+    }
 
-#include "common/mmap_file.hpp"
-#include "common/result.hpp"
-#include "common/timer.hpp"
+    std::string line;
+    while (std::getline(in, line)) {
+        if (!line.empty())
+            seeds.push_back(line);
+    }
 
-#include "crawler/http_client.hpp"
+    return seeds;
+}
 
+int main(int argc, char** argv) {
+    if (argc < 2) {
+        std::cerr << "usage:\n" << "  ./searchdb crawl " << "--seeds=file " << "--max-pages=100 " << "--threads=4 " << "--output=data/raw\n";
+        return 1;
+    }
 
-int main() {
-	std::cout<<"searchdb v0.0.1"<<std::endl;
-	
-	// Mmap basic-sanity check
-	std::ofstream("test.txt") << "hello.mmap";
+    std::string command = argv[1];
 
-	MmapFile file("test.txt");
+    if (command != "crawl") {
+        std::cerr << "unknown command: " << command << std::endl;
+        return 1;
+    }
 
-	std::string content(
-			reinterpret_cast<const char*>(file.data()),
-			file.size()
-	);
+    CrawlConfig config;
+    std::string seeds_file;
 
-	// Crawler fetch sanity test
-	std::cout<< content <<std::endl;
-	std::string url = "https://en.wikipedia.org/wiki/Web_crawler";
-	auto res = fetch(url);
-	std::cout<<"Fetching data from url -> "<<url<<std::endl;
+    for (int i = 2; i < argc; ++i) {
+        std::string arg = argv[i];
 
-	if (res) {
-		auto& result = res.value();
-		std::cout << result.status_code <<std::endl;
-		std::cout << result.body.size() <<std::endl;
-		std::cout << "Fetched data successfully"<<std::endl;
-	} else {
-		std::cout << "Failed to fetch data from "<<url<<" | Reason - ";
-		std::cout << to_string(res.error())<<std::endl;
-	}
-	return 0;
+        if (arg.starts_with("--seeds="))
+            seeds_file = arg.substr(8);
+        else if (arg.starts_with("--max-pages="))
+            config.max_pages = std::stoul(arg.substr(12));
+        else if (arg.starts_with("--threads="))
+			config.num_threads = std::stoul(arg.substr(10));
+        else if (arg.starts_with("--output="))
+            config.output_dir = arg.substr(9);
+    }
+    if (seeds_file.empty()) {
+        std::cerr << "--seeds is required" << std::endl;
+        return 1;
+    }
+
+    config.seed_urls = read_seed_file(seeds_file);
+
+    std::cout << "[main] loaded " << config.seed_urls.size() << " seeds" << std::endl;
+    Crawler crawler(config);
+    crawler.run();
+    return 0;
 }
