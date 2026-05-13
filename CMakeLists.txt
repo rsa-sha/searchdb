@@ -49,6 +49,7 @@ target_link_libraries(robots
 add_library(crawl_core
 	src/crawler/crawler.cpp
 )
+
 target_link_libraries(crawl_core
 	PUBLIC
 		url
@@ -65,6 +66,11 @@ add_library(html_parser
 target_link_libraries(html_parser
 	PUBLIC gumbo
 )
+
+add_library(tokenizer
+	src/pipeline/tokenizer.cpp
+)
+
 # -------------------------
 # Main executable
 # -------------------------
@@ -118,6 +124,10 @@ function(add_searchdb_test name type)
         target_link_libraries(${name}
 			PRIVATE html_parser
         )
+    elseif(type STREQUAL "tokenizer")
+        target_link_libraries(${name}
+			PRIVATE tokenizer
+        )
     else()
         message(FATAL_ERROR "Unknown test type: ${type}")
     endif()
@@ -169,5 +179,13 @@ add_searchdb_test(crawler_run_basic_crawl_test crawl_core)
 add_searchdb_test(html_parser_test html_parser)
 add_searchdb_test(html_parser_integration_test html_parser)
 set_tests_properties(html_parser_integration_test PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+)
+
+# Tokenizerer test
+add_searchdb_test(tokenizer_test tokenizer)
+add_searchdb_test(tokenizer_integration_test tokenizer)
+target_link_libraries(tokenizer_integration_test PRIVATE html_parser)
+set_tests_properties(tokenizer_integration_test PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 )

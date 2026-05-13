@@ -467,7 +467,7 @@ sah@rsa-sha:~/code/exa/searchdb$ ls -l data/raw | grep html| wc -l
 1000
 ```
 ---
-### Day 8 [10th of May, 2026]
+### Day 8 [11th of May, 2026]
 
 `Readings`
 - Read about HTML parsing, and the [BeautifulSoup](https://grokipedia.com/page/Beautiful_Soup_(HTML_parser)) parser
@@ -488,4 +488,74 @@ Test project /home/sah/code/exa/searchdb/build
 Total Test time (real) =   0.11 sec
 sah@rsa-sha:~/code/exa/searchdb/build$
 ```
+---
+### Day 9 [12th of May, 2026]
+`Readings`
+- Read about tokenizing from [Information Retrieval](https://grokipedia.com/page/Information_retrieval#retrieval-process-and-components) standpoint
+- Read the [tokenization](https://nlp.stanford.edu/IR-book/html/htmledition/tokenization-1.html), normalization & stemming from the [IR-Book](https://nlp.stanford.edu/IR-book/html/htmledition/the-term-vocabulary-and-postings-lists-1.html)
+- Table of [Stopwords lists for technical language processing applications](https://pmc.ncbi.nlm.nih.gov/articles/PMC8341615/table/pone.0254937.t001/)
+
+`Implementation Work`
+- Implemented the `Tokenizer` class with basic tokenization methods
+- Stop words have been picked up from a basic list that popped up during web search adn some from the stopwords list
+- Added tests [basic tokenization test & previewing tokens from data in crawled html files] for html parsing. Test results:
+```bash
+sah@rsa-sha:~/code/exa/searchdb/build$  ctest -R "^token"
+Test project /home/sah/code/exa/searchdb/build
+    Start 20: tokenizer_test
+1/2 Test #20: tokenizer_test ...................   Passed    0.00 sec
+    Start 21: tokenizer_integration_test
+2/2 Test #21: tokenizer_integration_test .......   Passed    0.13 sec
+
+100% tests passed, 0 tests failed out of 2
+
+Total Test time (real) =   0.13 sec
+```
+
+<details>
+<summary>tokenizer_integration_test output</summary>
+
+```bash
+sah@rsa-sha:~/code/exa/searchdb$  ./build/tokenizer_integration_test
+
+=================================
+FILE: data/raw/0.html
+TITLE: Inverted index - Wikipedia
+TOKENS (first 100):
+jump content main menu main menu move sidebar hide navigation main page contents current events random article wikipedia contact us contribute help learn edit community portal recent changes upload file special pages search search appearance donate create account log personal tools donate create account log contents move sidebar hide top applications compression see references external links toggle table contents inverted index 16 languages az rbaycanca catal tina deutsch espa ol suomi fran ais norsk bokm portugu rk edit links article talk english read edit view history tools tools move sidebar hide actions read edit view history general links related changes
+TOKEN COUNT: 843
+
+=================================
+FILE: data/raw/1.html
+TITLE: Search engine - Wikipedia
+TOKENS (first 100):
+jump content main menu main menu move sidebar hide navigation main page contents current events random article wikipedia contact us contribute help learn edit community portal recent changes upload file special pages search search appearance donate create account log personal tools donate create account log contents move sidebar hide top history toggle history subsection pre 1990s 1990s birth search engines 2000s present post dot com bubble approach toggle approach subsection local search market share toggle market share subsection russia east asia search engine bias customized results filter bubbles religious search engines search engine submission comparison social bookmarking technology toggle technology
+TOKEN COUNT: 6236
+
+=================================
+FILE: data/raw/2.html
+TITLE: Web crawler - Wikipedia
+TOKENS (first 100):
+jump content main menu main menu move sidebar hide navigation main page contents current events random article wikipedia contact us contribute help learn edit community portal recent changes upload file special pages search search appearance donate create account log personal tools donate create account log contents move sidebar hide top nomenclature overview crawling policy toggle crawling policy subsection selection policy restricting followed links url normalization path ascending crawling focused crawling academic focused crawler semantic focused crawler re visit policy politeness policy parallelization policy architectures security crawler identification crawling deep web visual vs programmatic crawlers list web crawlers toggle list web
+TOKEN COUNT: 5433
+
+=================================
+FILE: data/raw/3.html
+TITLE: PageRank - Wikipedia
+TOKENS (first 100):
+jump content main menu main menu move sidebar hide navigation main page contents current events random article wikipedia contact us contribute help learn edit community portal recent changes upload file special pages search search appearance donate create account log personal tools donate create account log contents move sidebar hide top description history algorithm toggle algorithm subsection simplified algorithm damping factor computation iterative power method implementation python variations toggle variations subsection pagerank undirected graph ranking objects two kinds distributed algorithm pagerank computation google toolbar serp rank google directory pagerank false spoofed pagerank manipulating pagerank directed surfer model uses toggle uses subsection
+TOKEN COUNT: 6074
+
+=================================
+FILE: data/raw/4.html
+TITLE: Distributed computing - Wikipedia
+TOKENS (first 100):
+jump content main menu main menu move sidebar hide navigation main page contents current events random article wikipedia contact us contribute help learn edit community portal recent changes upload file special pages search search appearance donate create account log personal tools donate create account log contents move sidebar hide top introduction patterns events vs messages parallel distributed computing history distributed computing architectures toggle distributed computing architectures subsection cell based architecture applications examples reactive distributed systems 10 theoretical foundations toggle theoretical foundations subsection 10 models 10 example 10 complexity measures 10 problems 10 election 10 properties distributed systems 10 topics 11
+TOKEN COUNT: 5375
+
+test_real_html_tokenization passed
+ALL TOKENIZER TESTS PASSED
+sah@rsa-sha:~/code/exa/searchdb$
+```
+</details>
 ---
