@@ -263,7 +263,6 @@ Total Test time (real) =   0.87 sec
 sah@rsa-sha:~/code/exa/searchdb/build$
 ```
 ---
----
 
 ### Day 7 [10th of May, 2026]
 
@@ -467,3 +466,26 @@ gdb --args ./build/searchdb crawl --seeds=tools/crawl_seeds.txt --max-pages=1000
 sah@rsa-sha:~/code/exa/searchdb$ ls -l data/raw | grep html| wc -l
 1000
 ```
+---
+### Day 8 [10th of May, 2026]
+
+`Readings`
+- Read about HTML parsing, and the [BeautifulSoup](https://grokipedia.com/page/Beautiful_Soup_(HTML_parser)) parser
+
+`Implementation Work`
+- Implemented `parse_html` function, to run on crawled HTML data.
+- Added tests [basic tests, previewing text from crawled html files] for html parsing. Test results:
+```bash
+sah@rsa-sha:~/code/exa/searchdb/build$  ctest -R "^html"
+Test project /home/sah/code/exa/searchdb/build
+    Start 18: html_parser_test
+1/2 Test #18: html_parser_test .................   Passed    0.00 sec
+    Start 19: html_parser_integration_test
+2/2 Test #19: html_parser_integration_test .....   Passed    0.11 sec
+
+100% tests passed, 0 tests failed out of 2
+
+Total Test time (real) =   0.11 sec
+sah@rsa-sha:~/code/exa/searchdb/build$
+```
+---

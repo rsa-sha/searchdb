@@ -58,6 +58,13 @@ target_link_libraries(crawl_core
 		urlfrontier
 		robots
 )
+
+add_library(html_parser
+	src/pipeline/html_parser.cpp
+)
+target_link_libraries(html_parser
+	PUBLIC gumbo
+)
 # -------------------------
 # Main executable
 # -------------------------
@@ -72,6 +79,7 @@ target_link_libraries(searchdb
         threadpool
         url
         CURL::libcurl
+        gumbo
 )
 
 # -------------------------
@@ -105,6 +113,10 @@ function(add_searchdb_test name type)
     elseif(type STREQUAL "crawl_core")
         target_link_libraries(${name}
 			PRIVATE crawl_core
+        )
+    elseif(type STREQUAL "html_parser")
+        target_link_libraries(${name}
+			PRIVATE html_parser
         )
     else()
         message(FATAL_ERROR "Unknown test type: ${type}")
@@ -152,3 +164,10 @@ add_searchdb_test(robots_invalid_test robots)
 
 # Crawl core
 add_searchdb_test(crawler_run_basic_crawl_test crawl_core)
+
+# HTML Parser test
+add_searchdb_test(html_parser_test html_parser)
+add_searchdb_test(html_parser_integration_test html_parser)
+set_tests_properties(html_parser_integration_test PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+)

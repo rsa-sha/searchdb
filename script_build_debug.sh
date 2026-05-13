@@ -6,7 +6,10 @@ echo "Cleaning up existing build dir"
 rm -fr build/
 
 echo "Generating debug build files"
-cmake -DCMAKE_BUILD_TYPE=Debug -B build -G Ninja
+echo "Generating debug build files"
+cmake -B build -G Ninja \
+  -DCMAKE_BUILD_TYPE=Debug \
+  -DCMAKE_CXX_FLAGS="-fno-omit-frame-pointer -g"
 
 echo "Building"
 ninja -C build
