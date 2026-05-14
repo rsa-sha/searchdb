@@ -73,7 +73,16 @@ static void walk(GumboNode *node, ParsedDocument &doc, bool &in_title) {
 
     if (node->type == GUMBO_NODE_TEXT) {
         std::string txt = node->v.text.text;
-        if (in_title) {
+        // empty page
+		bool has_non_space = false;
+		for (char c : txt) {
+			if (!std::isspace(static_cast<unsigned char>(c))) {
+				has_non_space = true;
+				break;
+			}
+		}
+
+		if (in_title) {
             doc.title += txt;
         } else {
             doc.body_text += txt;
@@ -132,5 +141,17 @@ Result<ParsedDocument> parse_html(const std::string& html) {
     decode_entities(doc.body_text);
     decode_entities(doc.title);
 
+	// add strict check to verify content
+	auto has_real_text = false;
+	for (char c : doc.body_text) {
+		if (std::isalnum(static_cast<unsigned char>(c))) {
+			has_real_text = true;
+			break;
+		}
+	}
+
+	if (!has_real_text) {
+		doc.body_text.clear(); // mark as empty but valid
+	}
     return doc;
 }

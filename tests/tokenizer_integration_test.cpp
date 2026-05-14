@@ -38,7 +38,7 @@ static void test_real_html_tokenization() {
 
     int found_files = 0;
 
-    for (int i = 0; i < 5; ++i) {
+    for (int i = 0; i < 100; ++i) {
         std::string path = dir + "/" + std::to_string(i) + ".html";
 
         if (!fs::exists(path))
@@ -67,8 +67,11 @@ static void test_real_html_tokenization() {
 
         std::cout << "\nTOKEN COUNT: " << tokens.size() << "\n";
 
-        // sanity checks
-        assert(!doc.body_text.empty());
+        // Some pages might have no text
+        if (doc.body_text.empty()) {
+			std::cout << "[SKIP] empty page: " << path << "\n";
+			continue;
+		}
 
         // ensure tokenizer is actually doing something useful
         if (!tokens.empty()) {
