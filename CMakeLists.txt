@@ -189,3 +189,5 @@ target_link_libraries(tokenizer_integration_test PRIVATE html_parser)
 set_tests_properties(tokenizer_integration_test PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 )
+
+add_searchdb_test(stemmer_test tokenizer)

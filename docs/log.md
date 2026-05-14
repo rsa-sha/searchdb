@@ -558,4 +558,28 @@ ALL TOKENIZER TESTS PASSED
 sah@rsa-sha:~/code/exa/searchdb$
 ```
 </details>
+
 ---
+### Day 10 [13th of May, 2026]
+`Readings`
+- Went through some [examples](https://www.nltk.org/howto/stem.html) of stemming to get an overview
+- Read about [stemming](https://nlp.stanford.edu/IR-book/html/htmledition/stemming-and-lemmatization-1.html) from IR-Book
+
+`Implementation Work`
+- Implemented the `stem_` & helper method with simple stemming rules
+- Added a stemming test, updated tokeinzer tests as the pipeline now includes stemming as a step. Test results:
+```bash
+sah@rsa-sha:~/code/exa/searchdb/build$   ctest -R "^token|^stem"
+Test project /home/sah/code/exa/searchdb/build
+    Start 20: tokenizer_test
+1/3 Test #20: tokenizer_test ...................   Passed    0.01 sec
+    Start 21: tokenizer_integration_test
+2/3 Test #21: tokenizer_integration_test .......   Passed    0.23 sec
+    Start 22: stemmer_test
+3/3 Test #22: stemmer_test .....................   Passed    0.00 sec
+
+100% tests passed, 0 tests failed out of 3
+
+Total Test time (real) =   0.24 sec
+sah@rsa-sha:~/code/exa/searchdb/build$
+```

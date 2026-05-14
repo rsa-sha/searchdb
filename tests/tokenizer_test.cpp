@@ -25,7 +25,8 @@ static void test_punctuation_and_numbers() {
     auto tokens = tokenizer.tokenize(text);
 
     assert(tokens.size() == 2);
-    assert(tokens[0] == "programming");
+	// This is stemmed now
+    assert(tokens[0] == "program");
     assert(tokens[1] == "2024");
 
     std::cout << "test_punctuation_and_numbers passed\n";
@@ -53,9 +54,9 @@ static void test_tokenize_query_consistency() {
     auto doc_tokens = tokenizer.tokenize(doc_text);
     auto query_tokens = tokenizer.tokenize_query(query_text);
 
-    // Both pipelines lowercase and remove stop words
-    assert(std::find(doc_tokens.begin(), doc_tokens.end(), "processing") != doc_tokens.end());
-    assert(std::find(query_tokens.begin(), query_tokens.end(), "processing") != query_tokens.end());
+    // Both pipelines lowercase and remove stop words, also words are being passed through a stemmer
+    assert(std::find(doc_tokens.begin(), doc_tokens.end(), "process") != doc_tokens.end());
+    assert(std::find(query_tokens.begin(), query_tokens.end(), "process") != query_tokens.end());
 
     std::cout << "test_tokenize_query_consistency passed\n";
 }
