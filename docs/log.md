@@ -583,3 +583,38 @@ Test project /home/sah/code/exa/searchdb/build
 Total Test time (real) =   0.24 sec
 sah@rsa-sha:~/code/exa/searchdb/build$
 ```
+---
+### Day 11 [14th of May, 2026]
+`Readings`
+- Reviewed binary document store layout:
+  - `[doc_count: u32]`
+  - `[offsets: u64 × doc_count]`
+  - `[doc blobs: url_len(u16), url, title_len(u16), title, text_len(u32), text]`
+- Understood two-phase vs in-memory offset construction tradeoffs for simple implementations
+
+`Implementation Work`
+- Implemented `DocStoreWriter` with in-memory document accumulation and single-pass flush
+- Implemented offset pre-computation and binary serialization of document blobs
+- Implemented `DocStoreReader` using `MmapFile` for zero-copy offset table access
+- Fixed offset decoding bug (corrected pointer arithmetic for `uint64_t` offset table)
+- Added safe bounds checks while reading variable-length fields (URL/title/text)
+
+`Testing`
+- Verified round-trip correctness with 100 documents (write → flush → read → exact match)
+- Validated binary file structure using `xxd`:
+- Added edge-case coverage:
+  - empty strings
+  - large documents
+  - random access reads (non-sequential doc_ids)
+```bash
+sah@rsa-sha:~/code/exa/searchdb/build$  ctest -R "^doc"
+Test project /home/sah/code/exa/searchdb/build
+    Start 23: doc_store_test
+1/2 Test #23: doc_store_test ...................   Passed    0.00 sec
+    Start 24: doc_store_edge_test
+2/2 Test #24: doc_store_edge_test ..............   Passed    0.00 sec
+
+100% tests passed, 0 tests failed out of 2
+
+Total Test time (real) =   0.01 sec
+```
