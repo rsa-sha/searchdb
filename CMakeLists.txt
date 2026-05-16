@@ -58,6 +58,7 @@ target_link_libraries(crawl_core
 		threadpool
 		urlfrontier
 		robots
+		html_parser
 )
 
 add_library(html_parser

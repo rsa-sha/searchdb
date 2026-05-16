@@ -13,7 +13,7 @@ public:
 	~ScopedTimer() {
 		auto end = std::chrono::high_resolution_clock::now();
 		auto ms= std::chrono::duration_cast<std::chrono::milliseconds>(end-start_).count();
-		std::cout<<"["<<label_<<"] elapsed: "<<ms<<std::endl;
+		std::cout<<"["<<label_<<"] elapsed: "<<ms<<"ms"<<std::endl;
 	}
 
 private:
