@@ -618,3 +618,26 @@ Test project /home/sah/code/exa/searchdb/build
 
 Total Test time (real) =   0.01 sec
 ```
+---
+### Day 12 [15th of May, 2026]
+
+`Readings`
+- Reviewed end-to-end ingestion pipeline structure:
+  - filesystem iteration
+  - bulk HTML loading
+  - HTML parsing using Gumbo
+  - document serialization into DocStore
+- Studied profiling workflow using Linux `perf`:
+  - `perf stat`
+  - `perf record`
+  - `perf report`
+- Investigated parser bottlenecks:
+  - Gumbo lexer/parser overhead
+  - UTF-8 validation costs
+  - allocator (`malloc/free`) pressure during DOM construction
+- Reviewed producer-consumer pipeline design for future parser parallelization
+
+`Implementation Work`
+- Wired full processing pipeline into CLI:
+```bash
+./searchdb process --input=data/raw/ --output=data/processed/
