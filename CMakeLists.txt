@@ -71,6 +71,10 @@ add_library(tokenizer
 	src/pipeline/tokenizer.cpp
 )
 
+add_library(docstore
+	src/pipeline/doc_store.cpp
+)
+
 # -------------------------
 # Main executable
 # -------------------------
@@ -86,6 +90,7 @@ target_link_libraries(searchdb
         url
         CURL::libcurl
         gumbo
+        docstore
 )
 
 # -------------------------
@@ -127,6 +132,10 @@ function(add_searchdb_test name type)
     elseif(type STREQUAL "tokenizer")
         target_link_libraries(${name}
 			PRIVATE tokenizer
+        )
+    elseif(type STREQUAL "docstore")
+        target_link_libraries(${name}
+			PRIVATE docstore
         )
     else()
         message(FATAL_ERROR "Unknown test type: ${type}")
@@ -190,4 +199,9 @@ set_tests_properties(tokenizer_integration_test PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 )
 
+# Stemmer test
 add_searchdb_test(stemmer_test tokenizer)
+
+# Doc store tests
+add_searchdb_test(doc_store_test docstore)
+add_searchdb_test(doc_store_edge_test docstore)
