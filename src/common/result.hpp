@@ -13,7 +13,8 @@ enum class SearchError {
 	MemError,			// To be sent when unable to allocate mem or create variable
 	NetworkError,
 	Timeout,
-	HttpError
+	HttpError,
+	Corrupt				// File being read is corrupted
 };
 
 inline const char* to_string(SearchError err) {
