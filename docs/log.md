@@ -641,3 +641,43 @@ Total Test time (real) =   0.01 sec
 - Wired full processing pipeline into CLI:
 ```bash
 ./searchdb process --input=data/raw/ --output=data/processed/
+```
+---
+### Day 13 [16th of May, 2026]
+
+`Readings`
+- Reviewed ingestion pipeline scaling characteristics under real-world corpus size (~10K HTML documents)
+- Studied failure modes in HTML processing pipelines:
+  - empty/redirect pages
+  - malformed HTML structures
+  - noisy navigation-heavy pages (Wikipedia-style content)
+- Evaluated system-level profiling output using `perf stat` and `perf report`:
+  - confirmed Gumbo HTML parser as primary CPU hotspot
+  - observed allocator overhead during DOM construction
+  - verified near-linear scaling behavior across dataset sizes
+
+`Implementation Work`
+- Executed full crawl pipeline to collect ~10,000 HTML pages (~33 minutes runtime)
+- Ran full processing pipeline:
+
+```bash
+./searchdb process --input=data/raw --output=data/processed/
+```
+
+- Achieved stable processing throughput:
+  - ~9,939 documents processed
+  - ~106 docs/sec
+  - consistent scaling across entire dataset
+- Improved pipeline robustness:
+  - skipped empty/redirect pages
+  - safely handled parsing failures
+  - ensured only valid parsed documents enter DocStore
+- Verified correctness via random document readback from DocStore
+- Added `docs/architecture.md` describing ingestion pipeline
+
+`Testing`
+- Validated full pipeline end-to-end:
+  - crawl → process → store → readback
+- Confirmed DocStore integrity at 10K-document scale
+- Observed stable memory usage during full pipeline execution
+---

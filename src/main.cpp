@@ -10,6 +10,10 @@
 #include <string>
 #include <vector>
 
+// HARD Limit of 10MB for max HTML page size
+constexpr size_t MAX_HTML_SIZE = 10 * 1024 * 1024;
+
+
 // If user passes no args or -h or --help
 static void print_usage() {
 	std::cerr <<
@@ -122,6 +126,10 @@ static int run_process(int argc, char **argv) {
 			size_t size = in.tellg();
 			in.seekg(0, std::ios::beg);
 
+			if (size > MAX_HTML_SIZE) {
+				skipped++;
+				continue;
+			}
 			std::string html;
 			html.resize(size);
 			in.read(html.data(), size);
