@@ -1,7 +1,7 @@
 .cache/clangd
 
 # stores compiled binaries and library files
-build/
+build*
 # crawler data storage location
 data/
 *.o

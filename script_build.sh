@@ -2,10 +2,13 @@
 
 set -e  # stop on error
 
-echo "Generating build files"
-cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+echo "Cleaning release build"
+rm -rf build_release
+
+echo "Generating release build files"
+cmake -B build_release -G Ninja -DCMAKE_BUILD_TYPE=Release
 
 echo "Building"
-ninja -C build
+ninja -C build_release
 
 echo "Build successful"

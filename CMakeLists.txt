@@ -6,6 +6,8 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+option(ENABLE_TSAN "Enable ThreadSanitizer" OFF)
+
 # -------------------------
 # Dependencies
 # -------------------------
@@ -168,14 +170,17 @@ add_searchdb_test(url_frontier_basic urlfrontier)
 add_searchdb_test(url_frontier_done urlfrontier)
 add_searchdb_test(url_frontier_delay urlfrontier)
 add_searchdb_test(url_frontier_threaded urlfrontier)
-target_compile_options(url_frontier_threaded PRIVATE
-	-fsanitize=thread
-	-fno-omit-frame-pointer
-    -no-pie
-    -g)
-target_link_options(url_frontier_threaded PRIVATE
-	-fsanitize=thread
-	-no-pie)
+if(ENABLE_TSAN)
+    target_compile_options(url_frontier_threaded PRIVATE
+        -fsanitize=thread
+        -fno-omit-frame-pointer
+        -g
+    )
+
+    target_link_options(url_frontier_threaded PRIVATE
+        -fsanitize=thread
+    )
+endif()
 
 # Robots tests
 add_searchdb_test(robots_basic_test robots)

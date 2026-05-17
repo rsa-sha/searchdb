@@ -681,3 +681,158 @@ Total Test time (real) =   0.01 sec
 - Confirmed DocStore integrity at 10K-document scale
 - Observed stable memory usage during full pipeline execution
 ---
+### Day 14 [17th of May, 2026]
+
+`Readings`
+- Reviewed ingestion pipeline stability under memory-checking tools (Valgrind)
+- Analyzed allocator-heavy behavior in HTML parsing and tokenization pipeline
+- Validated memory lifecycle across:
+  - DocStoreWriter / DocStoreReader
+  - Gumbo-based HTML parser
+  - Tokenization + stemming pipeline
+- Confirmed expected Valgrind overhead in I/O and DOM-heavy workloads (10×–30× slowdown)
+
+`Implementation Work`
+- Ran controlled Valgrind validation on process pipeline (200-document corpus)
+- Verified full ingestion flow:
+  - HTML → parsed document → tokenization → DocStore persistence → readback validation
+- Confirmed deterministic behavior under memory instrumentation
+- No architectural changes required post-ASAN validation
+
+`Testing`
+- Executed Valgrind audit on process pipeline (200 documents)
+
+    <details>
+    <summary>Valgrind: process pipeline (no leaks detected)</summary>
+
+    ```bash
+    sah@rsa-sha:~/code/exa/searchdb$  valgrind --leak-check=full --track-origins=yes ./build_debug/searchdb process --input=data/small --output=data/processed
+    ==41474== Memcheck, a memory error detector
+    ==41474== Copyright (C) 2002-2022, and GNU GPL'd, by Julian Seward et al.
+    ==41474== Using Valgrind-3.22.0 and LibVEX; rerun with -h for copyright info
+    ==41474== Command: ./build_debug/searchdb process --input=data/small --output=data/processed
+    ==41474==
+    [process] 100 docs processed
+    [process] done processed=199 skipped=1 avg_len=23194.4 docs/sec=1.39207 time=142.952s
+    [process] done processed=199 skipped=1
+
+    [verify] reading 5 random docs:
+
+    ID: 163
+    Title: The Art of Computer Programming - Wikipedia
+    URL: 116.html
+    Text: Jump to content Main menu Main menu move to sidebar hide    Navigation   Main page Contents Current ...
+
+    ID: 20
+    Title: Handle System - Wikipedia
+    URL: 123.html
+    Text: Jump to content Main menu Main menu move to sidebar hide    Navigation   Main page Contents Current ...
+
+    ID: 94
+    Title: Category:Search engines - Wikiversity
+    URL: 188.html
+    Text: Jump to content Main menu Main menu move to sidebar hide    Navigation   Main Page Browse Recent cha...
+
+    ID: 180
+    Title: Invertovaný soubor – Wikipedie
+    URL: 29.html
+    Text: Přeskočit na obsah Hlavní menu Hlavní menu přesunout do postranního panelu skrýt    Navigace ...
+
+    ID: 121
+    Title: The Quest for Correct Information on the Web: Hyper Search
+    Engines
+    URL: 189.html
+    Text: The Quest for Correct Information on the Web:  Hyper Search Engines  Massimo Marchiori   Department ...
+    [total process pipeline] elapsed: 143056ms
+    ==41474==
+    ==41474== HEAP SUMMARY:
+    ==41474==     in use at exit: 0 bytes in 0 blocks
+    ==41474==   total heap usage: 9,396,400 allocs, 9,396,400 frees, 370,745,649 bytes allocated
+    ==41474==
+    ==41474== All heap blocks were freed -- no leaks are possible
+    ==41474==
+    ==41474== For lists of detected and suppressed errors, rerun with: -s
+    ==41474== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
+    sah@rsa-sha:~/code/exa/searchdb$
+    ```
+    </details>
+
+- Executed controlled Valgrind validation on crawl pipeline (10 pages, single-threaded)
+
+    <details>
+    <summary>Valgrind: crawl pipeline (clean, single-threaded, reduced corpus)</summary>
+
+    ```bash
+    sah@rsa-sha:~/code/exa/searchdb$  valgrind --leak-check=full --track-origins=yes ./build_debug/searchdb crawl   --seeds=tools/crawl_seeds.txt  --max-pages=10 --threads=1 --output=data/crawl100
+    ==54916== Memcheck, a memory error detector
+    ==54916== Copyright (C) 2002-2022, and GNU GPL'd, by Julian Seward et al.
+    ==54916== Using Valgrind-3.22.0 and LibVEX; rerun with -h for copyright info
+    ==54916== Command: ./build_debug/searchdb crawl --seeds=tools/crawl_seeds.txt --max-pages=10 --threads=1 --output=data/crawl10
+    ==54916==
+    [crawl] seeds=30
+    [crawler] loading 30 seed URLs
+    [seed] https://en.wikipedia.org/wiki/Web_crawler
+    [seed] https://en.wikipedia.org/wiki/Search_engine
+    [seed] https://en.wikipedia.org/wiki/Inverted_index
+    [seed] https://en.wikipedia.org/wiki/PageRank
+    [seed] https://en.wikipedia.org/wiki/Distributed_system
+    [seed] https://en.wikipedia.org/wiki/Database
+    [seed] https://en.wikipedia.org/wiki/B-tree
+    [seed] https://en.wikipedia.org/wiki/Trie
+    [seed] https://en.wikipedia.org/wiki/Latency
+    [seed] https://en.wikipedia.org/wiki/HTTP
+    [seed] https://en.wikipedia.org/wiki/Kernel_(operating_system)
+    [seed] https://en.wikipedia.org/wiki/Linux
+    [seed] https://en.wikipedia.org/wiki/Computer_cluster
+    [seed] https://en.wikipedia.org/wiki/Load_balancing_(computing)
+    [seed] https://en.wikipedia.org/wiki/MapReduce
+    [seed] https://en.wikipedia.org/wiki/Concurrency_(computer_science)
+    [seed] https://en.wikipedia.org/wiki/Multithreading_(computer_architecture)
+    [seed] https://en.wikipedia.org/wiki/Memory_management
+    [seed] https://en.wikipedia.org/wiki/Virtual_memory
+    [seed] https://en.wikipedia.org/wiki/File_system
+    [seed] https://en.wikipedia.org/wiki/RAID
+    [seed] https://en.wikipedia.org/wiki/TCP
+    [seed] https://en.wikipedia.org/wiki/IP_address
+    [seed] https://en.wikipedia.org/wiki/DNS
+    [seed] https://en.wikipedia.org/wiki/Compiler
+    [seed] https://en.wikipedia.org/wiki/C%2B%2B
+    [seed] https://en.wikipedia.org/wiki/Redis
+    [seed] https://en.wikipedia.org/wiki/ClickHouse
+    [seed] https://en.wikipedia.org/wiki/Elasticsearch
+    [seed] https://en.wikipedia.org/wiki/Vector_database
+    [robots] fetching robots.txt for en.wikipedia.org
+    [1/10]https://en.wikipedia.org/wiki/Web_crawler (250 KB)
+    [extract] 509 links from https://en.wikipedia.org/wiki/Web_crawler
+    [2/10]https://en.wikipedia.org/wiki/Search_engine (314 KB)
+    [extract] 656 links from https://en.wikipedia.org/wiki/Search_engine
+    [3/10]https://en.wikipedia.org/wiki/Inverted_index (79 KB)
+    [extract] 142 links from https://en.wikipedia.org/wiki/Inverted_index
+    [4/10]https://en.wikipedia.org/wiki/PageRank (419 KB)
+    [extract] 578 links from https://en.wikipedia.org/wiki/PageRank
+    [5/10]https://en.wikipedia.org/wiki/Distributed_system (308 KB)
+    [extract] 722 links from https://en.wikipedia.org/wiki/Distributed_system
+    [6/10]https://en.wikipedia.org/wiki/Database (374 KB)
+    [extract] 1130 links from https://en.wikipedia.org/wiki/Database
+    [7/10]https://en.wikipedia.org/wiki/B-tree (263 KB)
+    [extract] 435 links from https://en.wikipedia.org/wiki/B-tree
+    [8/10]https://en.wikipedia.org/wiki/Trie (219 KB)
+    [extract] 496 links from https://en.wikipedia.org/wiki/Trie
+    [9/10]https://en.wikipedia.org/wiki/Latency (55 KB)
+    [extract] 93 links from https://en.wikipedia.org/wiki/Latency
+    [10/10]https://en.wikipedia.org/wiki/HTTP (410 KB)
+    [extract] 993 links from https://en.wikipedia.org/wiki/HTTP
+    ==54916==
+    ==54916== HEAP SUMMARY:
+    ==54916==     in use at exit: 0 bytes in 0 blocks
+    ==54916==   total heap usage: 1,859,246 allocs, 1,859,246 frees, 92,768,516 bytes allocated
+    ==54916==
+    ==54916== All heap blocks were freed -- no leaks are possible
+    ==54916==
+    ==54916== For lists of detected and suppressed errors, rerun with: -s
+    ==54916== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
+    ```
+    </details>
+> Crawl Valgrind run limited to 10 pages and 1 thread due to extreme instrumentation overhead causing HTTP timeouts and amplified thread + I/O latency under Valgrind.
+
+---
