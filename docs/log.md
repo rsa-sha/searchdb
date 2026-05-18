@@ -836,3 +836,69 @@ Total Test time (real) =   0.01 sec
 > Crawl Valgrind run limited to 10 pages and 1 thread due to extreme instrumentation overhead causing HTTP timeouts and amplified thread + I/O latency under Valgrind.
 
 ---
+### Day 15 [18th of May, 2026]
+
+`Readings`
+- Read IR Book Chapter 2 (sections 2.1–2.3) on [inverted index construction](https://nlp.stanford.edu/IR-book/html/htmledition/index-construction-1.html)
+- Studied term vocabulary, posting lists, and document frequency (df)
+- Understood why posting lists are sorted by `doc_id` for efficient AND-query merging
+
+
+`Implementation Work`
+- Implemented `Posting` and `InvertedIndexBuilder`
+- Added posting list construction, term-frequency counting, and corpus statistics tracking
+- Integrated indexing with existing HTML parser, tokenizer, and stemmer pipeline
+
+`Testing`
+- Added unit tests for posting insertion, ordering, and corpus statistics
+- Added integration test:
+  - parses 100 real HTML files
+  - tokenizes + stems content
+  - builds in-memory inverted index
+  - validates posting ordering and query term existence
+- Verified tests across:
+  - release build
+  - debug build
+  - ASAN build
+
+<details>
+<summary>Integration test results</summary>
+
+```bash
+
+sah@rsa-sha:~/code/exa/searchdb$  cd build_release/; ctest -R "^inverted"; cd -
+Test project /home/sah/code/exa/searchdb/build_release
+    Start 25: inverted_index_test
+1/2 Test #25: inverted_index_test ...............   Passed    0.00 sec
+    Start 26: inverted_index_integration_test
+2/2 Test #26: inverted_index_integration_test ...   Passed    0.60 sec
+
+100% tests passed, 0 tests failed out of 2
+
+Total Test time (real) =   0.60 sec
+/home/sah/code/exa/searchdb
+sah@rsa-sha:~/code/exa/searchdb$  cd build_debug/; ctest -R "^inverted"; cd -
+Test project /home/sah/code/exa/searchdb/build_debug
+    Start 25: inverted_index_test
+1/2 Test #25: inverted_index_test ...............   Passed    0.00 sec
+    Start 26: inverted_index_integration_test
+2/2 Test #26: inverted_index_integration_test ...   Passed    1.61 sec
+
+100% tests passed, 0 tests failed out of 2
+
+Total Test time (real) =   1.61 sec
+/home/sah/code/exa/searchdb
+sah@rsa-sha:~/code/exa/searchdb$  cd build_asan/; ctest -R "^inverted"; cd -
+Test project /home/sah/code/exa/searchdb/build_asan
+    Start 25: inverted_index_test
+1/2 Test #25: inverted_index_test ...............   Passed    0.01 sec
+    Start 26: inverted_index_integration_test
+2/2 Test #26: inverted_index_integration_test ...   Passed    6.96 sec
+
+100% tests passed, 0 tests failed out of 2
+
+Total Test time (real) =   6.97 sec
+/home/sah/code/exa/searchdb
+sah@rsa-sha:~/code/exa/searchdb$
+```
+</details>
