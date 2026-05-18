@@ -78,6 +78,9 @@ add_library(docstore
 	src/pipeline/doc_store.cpp
 )
 
+add_library(inverted_index
+	src/index/inverted_index.cpp
+)
 # -------------------------
 # Main executable
 # -------------------------
@@ -139,6 +142,10 @@ function(add_searchdb_test name type)
     elseif(type STREQUAL "docstore")
         target_link_libraries(${name}
 			PRIVATE docstore
+        )
+    elseif(type STREQUAL "inverted_index")
+        target_link_libraries(${name}
+			PRIVATE inverted_index tokenizer html_parser
         )
     else()
         message(FATAL_ERROR "Unknown test type: ${type}")
@@ -211,3 +218,14 @@ add_searchdb_test(stemmer_test tokenizer)
 # Doc store tests
 add_searchdb_test(doc_store_test docstore)
 add_searchdb_test(doc_store_edge_test docstore)
+
+# Inverted Index tests
+add_searchdb_test(inverted_index_test inverted_index)
+add_searchdb_test(
+    inverted_index_integration_test
+    inverted_index
+)
+
+set_tests_properties( inverted_index_integration_test PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+)
