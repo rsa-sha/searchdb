@@ -80,6 +80,11 @@ add_library(docstore
 
 add_library(inverted_index
 	src/index/inverted_index.cpp
+	src/index/doc_lengths.cpp
+)
+
+target_link_libraries(inverted_index
+	PUBLIC tokenizer
 )
 # -------------------------
 # Main executable
@@ -97,6 +102,13 @@ target_link_libraries(searchdb
         CURL::libcurl
         gumbo
         docstore
+        inverted_index
+)
+
+add_library(pipeline
+    src/pipeline/doc_store.cpp
+    src/pipeline/html_parser.cpp
+    src/pipeline/tokenizer.cpp
 )
 
 # -------------------------
@@ -221,11 +233,12 @@ add_searchdb_test(doc_store_edge_test docstore)
 
 # Inverted Index tests
 add_searchdb_test(inverted_index_test inverted_index)
-add_searchdb_test(
-    inverted_index_integration_test
-    inverted_index
-)
-
+add_searchdb_test(inverted_index_integration_test inverted_index)
 set_tests_properties( inverted_index_integration_test PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+)
+add_searchdb_test(inverted_index_docstore_integration_test inverted_index)
+target_link_libraries(inverted_index_docstore_integration_test PRIVATE pipeline)
+set_tests_properties( inverted_index_docstore_integration_test PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 )
