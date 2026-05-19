@@ -26,6 +26,10 @@ public:
 
     double avg_doc_length() const;
 
+	const std::vector<uint32_t> &doc_lengths() const;
+	uint64_t total_postings() const;
+	size_t vocabulary_size() const;
+	std::pair<std::string, size_t> longest_posting_list() const;
 
 private:
 	std::unordered_map<std::string, std::vector<Posting>> index_;
@@ -33,4 +37,5 @@ private:
 
 	uint32_t doc_count_ = 0;
 	uint32_t total_tokens_ = 0;
+	uint64_t total_postings_ = 0;
 };

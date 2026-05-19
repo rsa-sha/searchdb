@@ -1,8 +1,12 @@
 #include "common/timer.hpp"
 #include "crawler/crawler.hpp"
+
 #include "pipeline/doc_store.hpp"
 #include "pipeline/html_parser.hpp"
 #include "pipeline/tokenizer.hpp"
+
+#include "index/doc_lengths.hpp"
+#include "index/inverted_index.hpp"
 
 #include <fstream>
 #include <filesystem>
@@ -19,7 +23,8 @@ static void print_usage() {
 	std::cerr <<
         "Usage:\n"
         "  ./searchdb crawl   --seeds=file --max-pages=100 --threads=4 --output=data/raw\n"
-        "  ./searchdb process --input=data/raw --output=data/processed\n";
+        "  ./searchdb process --input=data/raw --output=data/processed\n"
+        "  ./searchdb index --docs=data/processed/docs.bin --output=data/index/\n";
 }
 
 // Turns tokenized vector of strings to string representation
@@ -220,6 +225,61 @@ static int run_process(int argc, char **argv) {
 }
 
 
+static int run_index(int argc, char **argv) {
+	ScopedTimer total_timer("Total time required to Build Index from DocStore");
+	std::string docs_input_file;
+	std::string docs_output_dir;
+	for(int i=2;i <argc; i++) {
+		std::string arg = argv[i];
+		if (arg.starts_with("--docs="))
+			docs_input_file = arg.substr(7);
+		if (arg.starts_with("--output="))
+			docs_output_dir = arg.substr(9);
+	}
+	if (docs_input_file.empty() || docs_output_dir.empty()) {
+		std::cerr<<"--docs and --output are required" << "\n";
+		return 1;
+	}
+
+	DocStoreReader reader(docs_input_file);
+
+	Tokenizer tokenizer;
+	InvertedIndexBuilder builder;
+
+	for (uint32_t doc_id = 0; doc_id < reader.doc_count(); doc_id++) {
+		auto result = reader.get(doc_id);
+		if (!result)
+			continue;
+
+		const auto &doc = result.value();
+		std::string combined = doc.title + " " + doc.text;
+		auto tokens = tokenizer.tokenize(combined);
+		builder.add_document(doc_id, tokens);
+
+		if ((doc_id + 1) % 100 == 0)
+			std::cout << "[index] processed " << (doc_id + 1) << " docs\n";
+	}
+	builder.finalize();
+
+	auto [longest_term, longest_size] = builder.longest_posting_list();
+	std::cout << "\n[index] Indexed " << reader.doc_count() << " documents\n"
+			  << "[index] Vocabulary: " << builder.vocabulary_size() << " terms\n"
+			  << "[index] Total postings: " << builder.total_postings() << "\n"
+			  << "[index] Average doc length: " << builder.avg_doc_length() << "\n"
+			  << "[index] Longest posting list: '" << longest_term
+			  << "' → " << longest_size << " docs\n";
+
+	auto it = builder.index().find("algorithm");
+	if (it != builder.index().end())
+		std::cout << "[sanity] 'algorithm' appears in "<< it->second.size() << " documents\n";
+
+	std::string output_file = docs_output_dir + "/doc_lengths.bin";
+	DocLengthWriter writer;
+	writer.write(output_file, builder.doc_lengths());
+	return 0;
+}
+
+
 int main(int argc, char** argv) {
     if (argc < 2) {
         print_usage();
@@ -235,6 +295,8 @@ int main(int argc, char** argv) {
 		return run_crawl(argc, argv);
 	} else if (command == "process") {
 		return run_process(argc, argv);
+	} else if (command == "index") {
+		return run_index(argc, argv);
 	} else {
         std::cerr << "unknown command: " << command << "\n";
         return 1;
