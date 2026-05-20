@@ -2,6 +2,7 @@
 
 
 #include <algorithm>
+#include <fstream>
 #include <unordered_map>
 
 void InvertedIndexBuilder::add_document(uint32_t doc_id, const std::vector<std::string> &tokens) {
@@ -83,4 +84,94 @@ InvertedIndexBuilder::longest_posting_list() const {
     }
 
     return {best_term, best_size};
+}
+
+
+void serialize_index(const InvertedIndexBuilder &builder, const std::string &path) {
+    std::ofstream out(path, std::ios::binary);
+    const auto &index = builder.index();
+
+	// =========================
+    // 1. WRITE METADATA HEADER
+    // =========================
+    uint32_t doc_count = builder.doc_count();
+    uint32_t total_tokens = builder.total_tokens();
+    uint64_t total_postings = builder.total_postings();
+
+    out.write(reinterpret_cast<const char*>(&doc_count), sizeof(doc_count));
+    out.write(reinterpret_cast<const char*>(&total_tokens), sizeof(total_tokens));
+    out.write(reinterpret_cast<const char*>(&total_postings), sizeof(total_postings));
+
+	// =========================
+    // 2. WRITE INVERTED INDEX
+    // =========================
+	uint64_t num_terms = index.size();
+    out.write(reinterpret_cast<const char *>(&num_terms), sizeof(num_terms));
+
+    for (const auto& [term, postings] : index) {
+        uint32_t term_len = term.size();
+        out.write(reinterpret_cast<const char *>(&term_len), sizeof(term_len));
+        out.write(term.data(), term_len);
+
+        uint32_t posting_count = postings.size();
+        out.write(reinterpret_cast<const char *>(&posting_count), sizeof(posting_count));
+        for (const auto &p : postings) {
+            out.write(reinterpret_cast<const char *>(&p.doc_id), sizeof(p.doc_id));
+            out.write(reinterpret_cast<const char *>(&p.term_freq), sizeof(p.term_freq));
+        }
+    }
+}
+
+InvertedIndexBuilder load_index(const std::string &path){
+    InvertedIndexBuilder builder;
+
+    std::ifstream in(path, std::ios::binary);
+
+    // =========================
+    // 1. READ METADATA HEADER
+    // =========================
+    uint32_t doc_count;
+    uint32_t total_tokens;
+    uint64_t total_postings;
+
+    in.read(reinterpret_cast<char*>(&doc_count), sizeof(doc_count));
+    in.read(reinterpret_cast<char*>(&total_tokens), sizeof(total_tokens));
+    in.read(reinterpret_cast<char*>(&total_postings), sizeof(total_postings));
+
+    builder.doc_count_ = doc_count;
+    builder.total_tokens_ = total_tokens;
+    builder.total_postings_ = total_postings;
+
+    // =========================
+    // 2. READ INVERTED INDEX
+    // =========================
+    uint64_t num_terms;
+    in.read(reinterpret_cast<char *>(&num_terms), sizeof(num_terms));
+
+    for (uint64_t i = 0; i < num_terms; ++i) {
+
+        uint32_t term_len;
+        in.read(reinterpret_cast<char *>(&term_len), sizeof(term_len));
+
+        std::string term(term_len, '\0');
+        in.read(term.data(), term_len);
+
+        uint32_t posting_count;
+        in.read(reinterpret_cast<char *>(&posting_count), sizeof(posting_count));
+
+        std::vector<Posting> postings;
+        postings.reserve(posting_count);
+
+        for (uint32_t j = 0; j < posting_count; ++j) {
+            Posting p;
+            in.read(reinterpret_cast<char *>(&p.doc_id), sizeof(p.doc_id));
+            in.read(reinterpret_cast<char *>(&p.term_freq), sizeof(p.term_freq));
+            postings.push_back(p);
+        }
+
+        builder.index_.emplace(term, std::move(postings));
+    }
+
+    builder.finalize();
+    return builder;
 }
