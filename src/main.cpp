@@ -8,6 +8,8 @@
 #include "index/doc_lengths.hpp"
 #include "index/inverted_index.hpp"
 
+#include "search/bm25_scorer.hpp"
+
 #include <fstream>
 #include <filesystem>
 #include <iostream>
@@ -24,7 +26,8 @@ static void print_usage() {
         "Usage:\n"
         "  ./searchdb crawl   --seeds=file --max-pages=100 --threads=4 --output=data/raw\n"
         "  ./searchdb process --input=data/raw --output=data/processed\n"
-        "  ./searchdb index --docs=data/processed/docs.bin --output=data/index/\n";
+        "  ./searchdb index --docs=data/processed/docs.bin --output=data/index/\n"
+		"  ./searchdb search --docs=data/processed/docs.bin --query=\"machine learning\" --top=10\n";
 }
 
 // Turns tokenized vector of strings to string representation
@@ -276,8 +279,94 @@ static int run_index(int argc, char **argv) {
 	std::string output_file = docs_output_dir + "/doc_lengths.bin";
 	DocLengthWriter writer;
 	writer.write(output_file, builder.doc_lengths());
+	serialize_index(builder, docs_output_dir + "/inverted_index.bin");
 	return 0;
 }
+
+int run_search(int argc, char **argv) {
+	std::string docs_file;
+	std::string query;
+	size_t top_k = 10;
+	for(int i=2; i<argc; i++) {
+		std::string arg = argv[i];
+
+		if (arg.starts_with("--docs="))
+            docs_file = arg.substr(7);
+        else if (arg.starts_with("--query="))
+            query = arg.substr(8);
+        else if (arg.starts_with("--top="))
+            top_k = std::stoul(arg.substr(6));
+	}
+	if (docs_file.empty() || query.empty()) {
+        std::cerr << "--docs and --query are required\n";
+        return 1;
+    }
+
+    // 1. Load docstore
+    DocStoreReader reader(docs_file);
+
+    // 2. Build index in memory
+    Tokenizer tokenizer;
+	InvertedIndexBuilder index = load_index("data/index/inverted_index.bin");
+
+	// 3. Load doc_lengths (IMPORTANT: must match index)
+    // If you already store it in builder during index step, reuse pattern:
+    DocLengthReader dl_reader("data/index/doc_lengths.bin");
+
+    // 4. Build scorer
+    BM25Scorer scorer(
+        index.doc_count(),
+        index.avg_doc_length(),
+        &dl_reader
+    );
+	std::cerr << "DEBUG doc_count = " << index.doc_count() << "\n";
+	std::cerr << "DEBUG total_tokens avgdl = " << index.avg_doc_length() << "\n";
+    // 5. Tokenize query
+    auto query_terms = tokenizer.tokenize(query);
+
+    if (query_terms.empty()) {
+        std::cerr << "empty query after tokenization\n";
+        return 1;
+    }
+
+    // 6. Run BM25
+    auto results = scorer.query(query_terms, index, top_k);
+
+    // 7. Print results
+    std::cout << std::fixed;
+    std::cout.precision(10);
+
+    std::cout << "\n[query] " << query << "\n";
+    std::cout << "[results] " << results.size() << " docs\n\n";
+
+    for (size_t i = 0; i < results.size(); i++) {
+
+        const auto &r = results[i];
+        auto doc_opt = reader.get(r.doc_id);
+
+        if (!doc_opt) continue;
+
+        const auto &doc = doc_opt.value();
+
+        std::string snippet =
+            doc.text.substr(0, 120);
+
+        std::cout
+            << (i + 1)
+            << ". score=" << r.score
+            << " doc_id=" << r.doc_id
+            << "\n";
+
+        std::cout
+            << "   title: " << doc.title << "\n";
+
+        std::cout
+            << "   text: " << snippet << "...\n\n";
+    }
+
+    return 0;
+}
+
 
 
 int main(int argc, char** argv) {
@@ -297,6 +386,8 @@ int main(int argc, char** argv) {
 		return run_process(argc, argv);
 	} else if (command == "index") {
 		return run_index(argc, argv);
+	} else if (command == "search") {
+		return run_search(argc, argv);
 	} else {
         std::cerr << "unknown command: " << command << "\n";
         return 1;
