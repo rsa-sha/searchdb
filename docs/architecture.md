@@ -170,12 +170,78 @@ Scoped timing utility used for pipeline profiling.
 Example output:
 `[total process pipeline] elapsed: 93ms`
 
-## 4. Main Pipeline (`src/main.cpp`)
+## 4. Inverted Index (src/index/)
+
+The inverted index is the core structure used for full-text search and BM25 ranking.
+
+It maps terms → documents containing the term, along with term frequency.
+
+### 4.1 In-Memory Structure
+```cpp
+std::unordered_map<std::string, std::vector<Posting>>
+```
+Where:
+```cpp
+struct Posting {
+    uint32_t doc_id;
+    uint32_t term_freq;
+};
+```
+### 4.2 Index Construction
+
+Each document is processed as:
+1. Tokenize title + body text
+2. Count term frequencies per document
+3. Add postings to index
+
+Example:
+```
+doc_id = 5
+"algorithm algorithm tree"
+```
+Becomes:
+```
+algorithm → (5, 2)
+tree      → (5, 1)
+```
+### 4.3 Document Statistics
+Tracked during indexing:
+- doc_count → number of documents
+- total_tokens → total tokens in corpus
+- doc_lengths[doc_id] → number of tokens per document
+
+These are required for BM25 scoring.
+
+### 4.4 On-Disk Format (inverted_index.bin)
+```
+[doc_count: uint32]
+[total_tokens: uint32]
+[total_postings: uint64]
+
+[num_terms: uint64]
+
+For each term:
+    [term_length: uint32]
+    [term_bytes]
+
+    [posting_count: uint32]
+
+    For each posting:
+        [doc_id: uint32]
+        [term_freq: uint32]
+```
+
+## 5. Main Pipeline (`src/main.cpp`)
 ### Commands
 #### Crawl
 `./searchdb crawl --seeds=file --max-pages=10000 --threads=4 --output=data/raw`
 #### Process
 `./searchdb process --input=data/raw --output=data/processed`
+#### Search
+`./searchdb search --docs=data/processed/docs.bin --query="algorithm" --top=10`
+
+---
+
 #### Processing Flow
 1. Iterate over raw HTML files
 2. Load file into memory
@@ -199,7 +265,7 @@ Example output:
 - No indexing layer yet
 - Full DOM is constructed in memory (no streaming parser)
 
-### Planned Improvements
+## Planned Improvements
 #### Phase 1 — Parallel Processing Pipeline
 - Introduce ThreadPool into process stage
 - Split pipeline into:
