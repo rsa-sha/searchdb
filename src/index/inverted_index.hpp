@@ -31,6 +31,9 @@ public:
 	size_t vocabulary_size() const;
 	std::pair<std::string, size_t> longest_posting_list() const;
 
+	uint32_t total_tokens() const { return total_tokens_; }
+	friend InvertedIndexBuilder load_index(const std::string &path);
+
 private:
 	std::unordered_map<std::string, std::vector<Posting>> index_;
 	std::vector<uint32_t> doc_lengths_;
@@ -39,3 +42,7 @@ private:
 	uint32_t total_tokens_ = 0;
 	uint64_t total_postings_ = 0;
 };
+
+
+void serialize_index(const InvertedIndexBuilder &builder, const std::string &path);
+InvertedIndexBuilder load_index(const std::string &path);

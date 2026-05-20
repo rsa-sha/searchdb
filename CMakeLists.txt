@@ -86,6 +86,14 @@ add_library(inverted_index
 target_link_libraries(inverted_index
 	PUBLIC tokenizer
 )
+
+add_library(bm25scorer
+	src/search/bm25_scorer.cpp
+)
+
+target_link_libraries(bm25scorer
+	PUBLIC inverted_index
+)
 # -------------------------
 # Main executable
 # -------------------------
@@ -103,6 +111,7 @@ target_link_libraries(searchdb
         gumbo
         docstore
         inverted_index
+        bm25scorer
 )
 
 add_library(pipeline
@@ -158,6 +167,10 @@ function(add_searchdb_test name type)
     elseif(type STREQUAL "inverted_index")
         target_link_libraries(${name}
 			PRIVATE inverted_index tokenizer html_parser
+        )
+    elseif(type STREQUAL "bm25scorer")
+        target_link_libraries(${name}
+			PRIVATE bm25scorer inverted_index
         )
     else()
         message(FATAL_ERROR "Unknown test type: ${type}")
@@ -240,5 +253,12 @@ set_tests_properties( inverted_index_integration_test PROPERTIES
 add_searchdb_test(inverted_index_docstore_integration_test inverted_index)
 target_link_libraries(inverted_index_docstore_integration_test PRIVATE pipeline)
 set_tests_properties( inverted_index_docstore_integration_test PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+)
+
+# BM25Scorer tests
+add_searchdb_test(bm25_scorer_test bm25scorer)
+target_link_libraries(bm25_scorer_test PRIVATE pipeline)
+set_tests_properties(bm25_scorer_test PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 )
