@@ -27,7 +27,7 @@ static void print_usage() {
         "  ./searchdb crawl   --seeds=file --max-pages=100 --threads=4 --output=data/raw\n"
         "  ./searchdb process --input=data/raw --output=data/processed\n"
         "  ./searchdb index --docs=data/processed/docs.bin --output=data/index/\n"
-		"  ./searchdb search --docs=data/processed/docs.bin --query=\"machine learning\" --top=10\n";
+		"  ./searchdb search --index=data/index/--docs=data/processed/docs.bin --query=\"machine learning\" --top=10\n";
 }
 
 // Turns tokenized vector of strings to string representation
@@ -285,6 +285,7 @@ static int run_index(int argc, char **argv) {
 
 int run_search(int argc, char **argv) {
 	std::string docs_file;
+	std::string index_dir;
 	std::string query;
 	size_t top_k = 10;
 	for(int i=2; i<argc; i++) {
@@ -292,13 +293,15 @@ int run_search(int argc, char **argv) {
 
 		if (arg.starts_with("--docs="))
             docs_file = arg.substr(7);
+        else if (arg.starts_with("--index="))
+            index_dir = arg.substr(8);
         else if (arg.starts_with("--query="))
             query = arg.substr(8);
         else if (arg.starts_with("--top="))
             top_k = std::stoul(arg.substr(6));
 	}
 	if (docs_file.empty() || query.empty()) {
-        std::cerr << "--docs and --query are required\n";
+        std::cerr << "--docs, --index and --query are required\n";
         return 1;
     }
 
@@ -307,11 +310,13 @@ int run_search(int argc, char **argv) {
 
     // 2. Build index in memory
     Tokenizer tokenizer;
-	InvertedIndexBuilder index = load_index("data/index/inverted_index.bin");
+	std::string index_file = index_dir + "/" + "inverted_index.bin";
+	std::string doc_lengths_file = index_dir + "/" + "doc_lengths.bin";
+	InvertedIndexBuilder index = load_index(index_file);
 
 	// 3. Load doc_lengths (IMPORTANT: must match index)
     // If you already store it in builder during index step, reuse pattern:
-    DocLengthReader dl_reader("data/index/doc_lengths.bin");
+    DocLengthReader dl_reader(doc_lengths_file);
 
     // 4. Build scorer
     BM25Scorer scorer(
