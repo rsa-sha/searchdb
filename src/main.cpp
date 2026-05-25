@@ -280,6 +280,8 @@ static int run_index(int argc, char **argv) {
 	DocLengthWriter writer;
 	writer.write(output_file, builder.doc_lengths());
 	serialize_index(builder, docs_output_dir + "/inverted_index.bin");
+	serialize_index_v2(builder, docs_output_dir + "/inverted_index_v2.bin");
+	std::cout << "[index] wrote v2 mmap index: " << docs_output_dir + "/inverted_index_v2.bin" << "\n";
 	return 0;
 }
 
@@ -308,14 +310,13 @@ int run_search(int argc, char **argv) {
     // 1. Load docstore
     DocStoreReader reader(docs_file);
 
-    // 2. Build index in memory
+    // 2. Load mmap-based index (zero-copy, no hashmap construction)
     Tokenizer tokenizer;
-	std::string index_file = index_dir + "/" + "inverted_index.bin";
+	std::string index_file = index_dir + "/" + "inverted_index_v2.bin";
 	std::string doc_lengths_file = index_dir + "/" + "doc_lengths.bin";
-	InvertedIndexBuilder index = load_index(index_file);
+	InvertedIndex index(index_file);
 
-	// 3. Load doc_lengths (IMPORTANT: must match index)
-    // If you already store it in builder during index step, reuse pattern:
+	// 3. Load doc_lengths
     DocLengthReader dl_reader(doc_lengths_file);
 
     // 4. Build scorer

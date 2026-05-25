@@ -2,7 +2,9 @@
 
 
 #include <algorithm>
+#include <cstring>
 #include <fstream>
+#include <stdexcept>
 #include <unordered_map>
 
 void InvertedIndexBuilder::add_document(uint32_t doc_id, const std::vector<std::string> &tokens) {
@@ -115,10 +117,8 @@ void serialize_index(const InvertedIndexBuilder &builder, const std::string &pat
 
         uint32_t posting_count = postings.size();
         out.write(reinterpret_cast<const char *>(&posting_count), sizeof(posting_count));
-        for (const auto &p : postings) {
-            out.write(reinterpret_cast<const char *>(&p.doc_id), sizeof(p.doc_id));
-            out.write(reinterpret_cast<const char *>(&p.term_freq), sizeof(p.term_freq));
-        }
+        out.write(reinterpret_cast<const char*>(postings.data()),
+                  posting_count * sizeof(Posting));
     }
 }
 
@@ -148,6 +148,8 @@ InvertedIndexBuilder load_index(const std::string &path){
     uint64_t num_terms;
     in.read(reinterpret_cast<char *>(&num_terms), sizeof(num_terms));
 
+    builder.index_.reserve(num_terms);
+
     for (uint64_t i = 0; i < num_terms; ++i) {
 
         uint32_t term_len;
@@ -159,19 +161,167 @@ InvertedIndexBuilder load_index(const std::string &path){
         uint32_t posting_count;
         in.read(reinterpret_cast<char *>(&posting_count), sizeof(posting_count));
 
-        std::vector<Posting> postings;
-        postings.reserve(posting_count);
+        std::vector<Posting> postings(posting_count);
+        in.read(reinterpret_cast<char*>(postings.data()),
+                posting_count * sizeof(Posting));
 
-        for (uint32_t j = 0; j < posting_count; ++j) {
-            Posting p;
-            in.read(reinterpret_cast<char *>(&p.doc_id), sizeof(p.doc_id));
-            in.read(reinterpret_cast<char *>(&p.term_freq), sizeof(p.term_freq));
-            postings.push_back(p);
-        }
-
-        builder.index_.emplace(term, std::move(postings));
+        builder.index_.emplace(std::move(term), std::move(postings));
     }
 
-    builder.finalize();
     return builder;
+}
+
+
+// ============================================================
+// v2 serializer: mmap-friendly format with sorted term directory
+// ============================================================
+
+void serialize_index_v2(const InvertedIndexBuilder& builder, const std::string& path) {
+    const auto& index = builder.index();
+
+    // 1. Collect and sort terms alphabetically
+    std::vector<std::string> sorted_terms;
+    sorted_terms.reserve(index.size());
+    for (const auto& [term, _] : index)
+        sorted_terms.push_back(term);
+    std::sort(sorted_terms.begin(), sorted_terms.end());
+
+    // 2. Build the terms blob and postings blob, tracking offsets
+    std::vector<TermEntry> term_dir;
+    term_dir.reserve(sorted_terms.size());
+
+    std::vector<char> terms_blob;
+    std::vector<Posting> postings_blob;
+
+    for (const auto& term : sorted_terms) {
+        const auto& postings = index.at(term);
+
+        TermEntry entry;
+        entry.term_offset    = static_cast<uint32_t>(terms_blob.size());
+        entry.term_length    = static_cast<uint32_t>(term.size());
+        entry.postings_index = static_cast<uint32_t>(postings_blob.size());
+        entry.posting_count  = static_cast<uint32_t>(postings.size());
+        term_dir.push_back(entry);
+
+        // Append term string
+        terms_blob.insert(terms_blob.end(), term.begin(), term.end());
+
+        // Append postings
+        postings_blob.insert(postings_blob.end(), postings.begin(), postings.end());
+    }
+
+    // 3. Compute layout offsets
+    uint32_t num_terms = static_cast<uint32_t>(sorted_terms.size());
+    uint64_t term_dir_off     = sizeof(IndexHeader);                             // 32
+    uint64_t terms_blob_off   = term_dir_off + num_terms * sizeof(TermEntry);
+    uint64_t postings_blob_off = terms_blob_off + terms_blob.size();
+
+    // 4. Write everything
+    std::ofstream out(path, std::ios::binary);
+    if (!out)
+        throw std::runtime_error("serialize_index_v2: failed to open " + path);
+
+    // Header
+    IndexHeader hdr;
+    hdr.magic            = 0x49445832; // "IDX2"
+    hdr.doc_count        = builder.doc_count();
+    hdr.total_tokens     = builder.total_tokens();
+    hdr.num_terms        = num_terms;
+    hdr.total_postings   = builder.total_postings();
+    hdr.postings_blob_off = postings_blob_off;
+
+    out.write(reinterpret_cast<const char*>(&hdr), sizeof(hdr));
+
+    // Term directory
+    out.write(reinterpret_cast<const char*>(term_dir.data()),
+              term_dir.size() * sizeof(TermEntry));
+
+    // Terms blob
+    out.write(terms_blob.data(), terms_blob.size());
+
+    // Postings blob
+    out.write(reinterpret_cast<const char*>(postings_blob.data()),
+              postings_blob.size() * sizeof(Posting));
+
+    out.flush();
+    if (!out)
+        throw std::runtime_error("serialize_index_v2: write failed for " + path);
+}
+
+
+// ============================================================
+// InvertedIndex: mmap-based read-only index
+// ============================================================
+
+InvertedIndex::InvertedIndex(const std::string& path)
+    : file_(path)
+{
+    if (file_.size() < sizeof(IndexHeader))
+        throw std::runtime_error("InvertedIndex: file too small");
+
+    const uint8_t* base = file_.data();
+    header_ = reinterpret_cast<const IndexHeader*>(base);
+
+    if (header_->magic != 0x49445832)
+        throw std::runtime_error("InvertedIndex: bad magic (not v2 format)");
+
+    uint32_t n = header_->num_terms;
+
+    // Validate file has enough room for the term directory
+    size_t term_dir_end = sizeof(IndexHeader) + n * sizeof(TermEntry);
+    if (file_.size() < term_dir_end)
+        throw std::runtime_error("InvertedIndex: truncated term directory");
+
+    term_dir_ = reinterpret_cast<const TermEntry*>(base + sizeof(IndexHeader));
+
+    // Terms blob starts right after the term directory
+    terms_blob_ = reinterpret_cast<const char*>(base + term_dir_end);
+
+    // Postings blob at the offset stored in header
+    if (header_->postings_blob_off > file_.size())
+        throw std::runtime_error("InvertedIndex: invalid postings offset");
+
+    postings_blob_ = reinterpret_cast<const Posting*>(base + header_->postings_blob_off);
+}
+
+PostingList InvertedIndex::find(std::string_view term) const {
+    uint32_t n = header_->num_terms;
+    if (n == 0)
+        return {nullptr, 0};
+
+    // Binary search the sorted term directory
+    int lo = 0;
+    int hi = static_cast<int>(n) - 1;
+
+    while (lo <= hi) {
+        int mid = lo + (hi - lo) / 2;
+        const TermEntry& e = term_dir_[mid];
+        std::string_view entry_term(terms_blob_ + e.term_offset, e.term_length);
+
+        int cmp = entry_term.compare(term);
+        if (cmp == 0) {
+            return {postings_blob_ + e.postings_index, e.posting_count};
+        } else if (cmp < 0) {
+            lo = mid + 1;
+        } else {
+            hi = mid - 1;
+        }
+    }
+
+    return {nullptr, 0};
+}
+
+uint32_t InvertedIndex::doc_count() const {
+    return header_->doc_count;
+}
+
+double InvertedIndex::avg_doc_length() const {
+    if (header_->doc_count == 0)
+        return 0.0;
+    return static_cast<double>(header_->total_tokens) /
+           static_cast<double>(header_->doc_count);
+}
+
+uint32_t InvertedIndex::vocabulary_size() const {
+    return header_->num_terms;
 }
