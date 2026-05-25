@@ -2,8 +2,12 @@
 
 #include <cstdint>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <vector>
+
+#include "../common/mmap_file.hpp"
+#include "../pipeline/tokenizer.hpp"
 
 struct Posting {
 	uint32_t	doc_id;
@@ -46,3 +50,58 @@ private:
 
 void serialize_index(const InvertedIndexBuilder &builder, const std::string &path);
 InvertedIndexBuilder load_index(const std::string &path);
+
+
+// ============================================================
+// mmap-based read-only index (zero-copy, for query time)
+// ============================================================
+
+struct PostingList {
+    const Posting* data;
+    uint32_t count;
+
+    const Posting* begin() const { return data; }
+    const Posting* end()   const { return data + count; }
+    uint32_t size()        const { return count; }
+    bool empty()           const { return count == 0; }
+};
+
+struct TermEntry {
+    uint32_t term_offset;    // byte offset into terms blob
+    uint32_t term_length;    // length of term string
+    uint32_t postings_index; // index into postings blob (in Posting units)
+    uint32_t posting_count;  // number of postings for this term
+};
+
+struct IndexHeader {
+    uint32_t magic;            // 0x49445832 ("IDX2")
+    uint32_t doc_count;
+    uint32_t total_tokens;
+    uint32_t num_terms;
+    uint64_t total_postings;
+    uint64_t postings_blob_off;
+};
+
+static_assert(sizeof(IndexHeader) == 32, "IndexHeader must be 32 bytes");
+static_assert(sizeof(TermEntry) == 16, "TermEntry must be 16 bytes");
+static_assert(sizeof(Posting) == 8, "Posting must be 8 bytes (no padding)");
+
+class InvertedIndex {
+public:
+    explicit InvertedIndex(const std::string& path);
+
+    PostingList find(std::string_view term) const;
+
+    uint32_t doc_count()       const;
+    double   avg_doc_length()  const;
+    uint32_t vocabulary_size() const;
+
+private:
+    MmapFile            file_;
+    const IndexHeader*  header_;
+    const TermEntry*    term_dir_;
+    const char*         terms_blob_;
+    const Posting*      postings_blob_;
+};
+
+void serialize_index_v2(const InvertedIndexBuilder& builder, const std::string& path);

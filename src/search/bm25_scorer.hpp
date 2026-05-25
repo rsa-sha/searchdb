@@ -23,7 +23,11 @@ public:
 
 	double score_term(uint32_t term_freq, uint32_t doc_length) const;
 
+	// Query using InvertedIndexBuilder (tests / legacy)
 	std::vector<ScoredDoc> query (const std::vector<std::string> &query_terms, const InvertedIndexBuilder &index, size_t top_k = 10) const;
+
+	// Query using mmap-based InvertedIndex (production)
+	std::vector<ScoredDoc> query (const std::vector<std::string> &query_terms, const InvertedIndex &index, size_t top_k = 10) const;
 
 private:
 	uint32_t		N_;
