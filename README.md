@@ -1,4 +1,4 @@
-# searchdb
+# search
 
 An end-to-end search engine built from scratch in C++. Crawls the web, processes documents, builds an inverted index, and serves ranked search results using BM25 scoring.
 
